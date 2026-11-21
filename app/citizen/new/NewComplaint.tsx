@@ -7,6 +7,7 @@ import { CATEGORIES, SAMPLES, SUB_TO_CAT, fmtDate, photoOf } from "@/lib/taxonom
 import { VoiceSheet } from "./VoiceSheet";
 import { bestFix } from "@/lib/gps";
 import { useT, useLang } from "@/components/I18n";
+import { isAcceptedPhoto, PHOTO_UNRELATED, PHOTO_UNVERIFIED } from "@/lib/photo-validation";
 
 type Similar = { source?: string; complaint_id: string; category_reported: string; description: string; status: string; received_at: string; road_name: string | null; locality_text: string | null; photo: string | null; supporters: number; distance_m: number };
 export type Prefill = { subcategory: string; lat: number; lon: number; renew_of: string } | null;
@@ -43,6 +44,8 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
   const [photo, setPhoto] = useState<string | null>(null);
   const [aiState, setAiState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [ai, setAi] = useState<any>(null);
+  const [photoWarning, setPhotoWarning] = useState<string | null>(null);
+  const photoRequest = useRef(0);
   const [note, setNote] = useState<{ kind: "info" | "warn"; text: string } | null>(null);
   const [filled, setFilled] = useState<"photo" | "voice" | null>(null);
   const [category, setCategory] = useState("");
@@ -95,15 +98,37 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
     });
   }, [prefill]);
 
-  async function analyze(dataUrl: string) {
-    setAiState("busy");
-    setNote(null);
+  const photoBlocked = !!preview && (aiState !== "done" || !isAcceptedPhoto(ai));
+
+  function clearPhotoFields() {
+    if (filled !== "photo") return;
+    if (category === ai?.category) setCategory("");
+    if (sub === ai?.subcategory) setSub("");
+    if (desc === ai?.description?.slice(0, 250)) setDesc("");
+    setFilled(null);
+  }
+
+  function removePhoto() {
+    photoRequest.current++;
+    clearPhotoFields();
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(null);
+    setPhoto(null);
+    setAi(null);
+    setAiState("idle");
+    setPhotoWarning(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function analyze(dataUrl: string, requestId: number) {
     try {
       const r = await fetch("/api/ai/photo", { method: "POST", body: JSON.stringify({ image: dataUrl, hint: desc, lang: uiLang }) }).then((r) => r.json());
+      if (requestId !== photoRequest.current) return;
       if (r.photo) setPhoto(r.photo);
-      if (!r.ai) {
+      if (!isAcceptedPhoto(r.ai)) {
+        setAi(null);
         setAiState("error");
-        setNote({ kind: "warn", text: r.error || "Couldn't read the photo. Please choose the type yourself." });
+        setPhotoWarning(r.ai?.by === "claude" ? PHOTO_UNRELATED : PHOTO_UNVERIFIED);
         return;
       }
       setAi(r.ai);
@@ -112,18 +137,30 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
       if (!desc.trim() || filled === "photo") setDesc(r.ai.description.slice(0, 250));
       setFilled("photo");
       setAiState("done");
+      setPhotoWarning(null);
       setMissing((m) => m.filter((x) => x !== "problem type" && x !== "description"));
-      if (!r.ai.is_road_issue) setNote({ kind: "warn", text: `This doesn't look like a road problem${r.ai.note ? `: ${r.ai.note}` : "."}` });
     } catch {
+      if (requestId !== photoRequest.current) return;
+      setAi(null);
       setAiState("error");
-      setNote({ kind: "warn", text: "Couldn't reach the AI. Please choose the type yourself." });
+      setPhotoWarning(PHOTO_UNVERIFIED);
     }
   }
 
   async function onFile(file: File, demoKind?: string) {
+    const requestId = ++photoRequest.current;
+    clearPhotoFields();
+    if (preview) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
+    setPhoto(null);
+    setAi(null);
+    setAiState("busy");
+    setPhotoWarning(null);
+    setNote(null);
+    try {
     if (demoKind) {
       const r = await fetch("/api/locate", { method: "POST", body: JSON.stringify({ demo: demoKind }) }).then((r) => r.json());
+      if (requestId !== photoRequest.current) return;
       setLoc(r);
       setLocSource("photo");
     } else {
@@ -131,12 +168,21 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
         const exifr = (await import("exifr")).default;
         const gps = await exifr.gps(file);
         if (gps?.latitude) {
-          setLoc(await locateAt(gps.latitude, gps.longitude));
+          const photoLoc = await locateAt(gps.latitude, gps.longitude);
+          if (requestId !== photoRequest.current) return;
+          setLoc(photoLoc);
           setLocSource("photo");
         }
       } catch {}
     }
-    analyze(await resize(file));
+    const dataUrl = await resize(file);
+    if (requestId !== photoRequest.current) return;
+    await analyze(dataUrl, requestId);
+    } catch {
+      if (requestId !== photoRequest.current) return;
+      setAiState("error");
+      setPhotoWarning("This image could not be read. Please choose a JPG or PNG site photo, or remove the attachment.");
+    }
   }
 
   async function pickSample(s: (typeof SAMPLES)[number]) {
@@ -174,6 +220,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
 
   async function submit(opts: { force?: boolean } = {}) {
     setErr("");
+    if (photoBlocked) return setErr(photoWarning || "Wait for photo verification, or remove the attachment before submitting.");
     const miss: string[] = [];
     if (!loc) miss.push("location");
     if (!sub) miss.push("problem type");
@@ -294,7 +341,10 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
                   <div className="row bold" style={{ color: "var(--accent)" }}><span className="spin" /> {t("f.reading")}</div>
                 </div>
               )}
-              <button className="btn sm" style={{ position: "absolute", top: 10, right: 10 }} onClick={() => fileRef.current?.click()}>Change</button>
+              <div className="row" style={{ position: "absolute", top: 10, right: 10 }}>
+                <button className="btn sm" onClick={() => fileRef.current?.click()}>Change</button>
+                <button className="btn sm" onClick={removePhoto}>Remove photo</button>
+              </div>
             </div>
           ) : (
             <div className="row wrap-gap">
@@ -304,7 +354,11 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
               <button className="linkbtn small" onClick={() => setSamplesOpen(true)}><Ico name="image" size={16} /> {t("f.sample")}</button>
             </div>
           )}
-          {aiState === "done" && ai && (
+          {photoWarning && <div className="banner warn small" role="alert" style={{ marginTop: 12 }}>
+            <Ico name="alert" size={18} />
+            <div><b>Photo not accepted</b><p>{photoWarning}</p><p style={{ marginTop: 8 }}>For other civic concerns in Mumbai, call BMC on <a href="tel:1916" style={{ fontWeight: 700, textDecoration: "underline" }}>1916</a>. Outside Mumbai, contact your local municipal authority.</p></div>
+          </div>}
+          {aiState === "done" && isAcceptedPhoto(ai) && (
             <div className="chips" style={{ marginTop: 10 }}>
               <span className="pill ai-tag"><Ico name="sparkles" size={13} /> {ai.subcategory} · {ai.severity} severity</span>
               {ai.hazards?.slice(0, 3).map((h: string) => <span key={h} className="pill ai-tag">{h}</span>)}
@@ -354,7 +408,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
       </div>
 
       {err && <div className="banner bad">{err}</div>}
-      <button className="btn primary big" disabled={busy || aiState === "busy"} onClick={() => submit()}>
+      <button className="btn primary big" disabled={busy || photoBlocked} onClick={() => submit()}>
         {busy ? <span className="spin" /> : t("f.submit")}
       </button>
 
@@ -422,7 +476,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
                   <label className="fl">What&apos;s different about yours?</label>
                   <textarea className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Mine is on the other side of the road, near the school gate" />
                 </div>
-                <button className="btn primary big" disabled={busy || reason.trim().length < 5} onClick={() => submit({ force: true })}>
+                <button className="btn primary big" disabled={busy || photoBlocked || reason.trim().length < 5} onClick={() => submit({ force: true })}>
                   {busy ? <span className="spin" /> : "File my complaint"}
                 </button>
                 <button className="btn ghost block" onClick={() => setOverride(false)}>Back</button>

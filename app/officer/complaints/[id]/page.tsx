@@ -11,6 +11,7 @@ import { BUCKET_STYLE, SEASONS, bucketOf, currentSeason, fmtDate, fmtDateTime, i
 import { FLAG_TEXT } from "@/lib/views";
 import { AiReview, Decision } from "./Client";
 import { Tx } from "@/components/I18n";
+import { isAcceptedPhoto } from "@/lib/photo-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +56,8 @@ export default async function OfficerComplaint({ params }: { params: Promise<{ i
                 {c.landmark && <span className="pill s-inv"><Ico name="pin" size={13} /> {c.landmark}</span>}
                 <span className="pill s-inv"><Ico name="users" size={13} /> {(c.upvotes || 0) + (c.supporters?.length || 0)} supporters</span>
                 {c.citizen_name && <span className="pill s-inv">{c.citizen_name}</span>}
-                {c.ai && <span className="pill ai-tag"><Ico name="sparkles" size={13} /> Photo: {c.ai.subcategory}, {c.ai.severity}</span>}
-                {c.ai?.hazards?.map((h) => <span key={h} className="pill ai-tag">{h}</span>)}
+                {isAcceptedPhoto(c.ai) ? <span className="pill ai-tag"><Ico name="sparkles" size={13} /> Photo: {c.ai.subcategory}, {c.ai.severity}</span> : c.photo && <span className="pill s-reg">Photo not verified</span>}
+                {isAcceptedPhoto(c.ai) && c.ai.hazards?.map((h) => <span key={h} className="pill ai-tag">{h}</span>)}
               </div>
               {c.override_reason && <div className="banner warn small"><Ico name="info" size={18} /><div>Citizen filed this separately from #{c.similar_to}: “{c.override_reason}”</div></div>}
               <Link href={`/map?ward=${encodeURIComponent(c.ward_code || "")}&c=${c.complaint_id}`} className="linkbtn small"><Ico name="map" size={16} /> See on map</Link>

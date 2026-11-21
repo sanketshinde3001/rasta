@@ -7,6 +7,7 @@ import { clawbackTotals } from "@/lib/clawback";
 import { inrShort } from "@/lib/taxonomy";
 import { getT } from "@/lib/serverLang";
 import { LangSwitch } from "@/components/I18n";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default async function Landing() {
   const s = await getSession();
@@ -18,8 +19,7 @@ export default async function Landing() {
     <main className="wrap" style={{ paddingTop: 56 }}>
       <div className="between" style={{ marginBottom: 34 }}>
         <div className="brand" style={{ fontSize: 22 }}>
-          <span className="brand-mark" style={{ width: 38, height: 38, borderRadius: 11 }}><Ico name="road" size={22} stroke={2.2} /></span>
-          Rasta
+          <BrandLogo large />
         </div>
         <LangSwitch />
       </div>

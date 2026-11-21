@@ -11,7 +11,7 @@ const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "
 export const dynamic = "force-dynamic"; // every page reads live shared state
 
 export const metadata: Metadata = {
-  title: "Rasta · Mumbai road complaints, followed to the rupee",
+  title: "My BMC Rasta · Mumbai road complaints, followed to the rupee",
   description: "Report a road problem in a minute, track it, and see where your ward's repair money goes.",
 };
 

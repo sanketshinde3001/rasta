@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Ico } from "@/components/Ico";
 import { BAND, inr } from "@/lib/taxonomy";
+import { bidPricing } from "@/lib/bid-pricing";
 
 export function TenderClient({ tender: t, history }: { tender: any; history: Record<string, { band: string; failVsPeers: number; sla: number; jobs: number }> }) {
   const router = useRouter();
@@ -50,10 +51,10 @@ export function TenderClient({ tender: t, history }: { tender: any; history: Rec
             <>
               <div className="banner info small"><Ico name="scale" size={18} /><div><b>Recommendation.</b> {a.recommendation}</div></div>
               <p className="small"><b>Check before awarding:</b> {a.caution}</p>
-              <p className="tiny muted">{a.by === "claude" ? "Claude" : "Rules"} · Past contractors are judged on their BMC track record; new bidders on their bid. You make the award.</p>
+              <p className="tiny muted">{a.by === "claude" ? "Claude" : "Rules"} · Lower prices improve value for the same scope. Repair history, delivery and warranty also affect the overall score. You make the award.</p>
             </>
           ) : (
-            <p className="small muted">AI reads each bid against the rate-card estimate. For contractors who have worked for BMC, it checks their record: repairs failing compared with peers, deadlines, over-billing and double bills. New bidders are judged on experience, equipment, warranty and price.</p>
+            <p className="small muted">Bids below the estimate offer savings for the same work scope. The comparison also considers repair quality, deadlines, billing history and warranty. New bidders are judged on experience, equipment, warranty and price.</p>
           )}
         </div>
       )}
@@ -65,7 +66,7 @@ export function TenderClient({ tender: t, history }: { tender: any; history: Rec
             const h = b.contractor_id ? history[b.contractor_id] : null;
             const r = rank[b.bid_id];
             const won = t.awarded_bid === b.bid_id;
-            const ratio = b.amount_inr / t.estimate_inr;
+            const price = bidPricing(b.amount_inr, t.estimate_inr);
             return (
               <div key={b.bid_id} className="card" style={won ? { borderColor: "var(--green)", boxShadow: "0 0 0 2px var(--green-soft)" } : undefined}>
                 <div className="between" style={{ alignItems: "flex-start" }}>
@@ -79,7 +80,7 @@ export function TenderClient({ tender: t, history }: { tender: any; history: Rec
                         ) : (
                           <span className="pill s-inv">New to BMC</span>
                         )}
-                        {r?.pos === 1 && <span className="pill s-done">AI pick</span>}
+                        {r?.pos === 1 && <span className="pill s-done">{a.by === "claude" ? "AI pick" : "Rules pick"}</span>}
                         {won && <span className="pill s-done"><Ico name="check" size={13} /> Awarded</span>}
                       </div>
                       <div className="small muted" style={{ marginTop: 3 }}>
@@ -90,7 +91,8 @@ export function TenderClient({ tender: t, history }: { tender: any; history: Rec
                   </div>
                   <div style={{ textAlign: "right", flex: "none" }}>
                     <div className="num bold" style={{ fontSize: 18 }}>{inr(b.amount_inr)}</div>
-                    <div className={`tiny ${ratio < 0.85 ? "red" : "muted"}`}>{ratio < 1 ? `${Math.round((1 - ratio) * 100)}% below` : `${Math.round((ratio - 1) * 100)}% above`} estimate</div>
+                    <div className={`tiny ${price && price.saving > 0 ? "green" : "muted"}`}>{!price ? "Estimate unavailable" : price.saving === 0 ? "At estimate" : `${price.percent}% ${price.saving > 0 ? "below" : "above"} estimate`}</div>
+                    {price && price.saving > 0 && <div className="tiny green">{inr(price.saving)} potential saving</div>}
                   </div>
                 </div>
                 {r && (

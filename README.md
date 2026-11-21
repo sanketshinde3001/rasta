@@ -1,7 +1,7 @@
-# Rasta: every rupee on Mumbai's roads, accounted for
+# My BMC Rasta: every rupee on Mumbai's roads, accounted for
 
 > **Mumbai already tracks potholes. Nobody tracks who pays when the fix fails.**
-> Rasta joins the complaint, the work order, the contractor, the bill and the warranty into one trail. It then turns repairs that failed under warranty into money the city can get back.
+> My BMC Rasta joins the complaint, the work order, the contractor, the bill and the warranty into one trail. It then turns repairs that failed under warranty into money the city can get back.
 
 Built in one day at **Claude Impact Lab Mumbai** (21 Nov 2026) for the challenge *Follow the Rupee: Mumbai Monsoon Roads*.
 
@@ -18,7 +18,7 @@ Built in one day at **Claude Impact Lab Mumbai** (21 Nov 2026) for the challenge
 
 ## Where it fits
 
-BMC's **MyBMC MARG** app takes complaints and closes them. The concretisation dashboard names contractors for new cement roads. **Neither shows the bill, whether the repair held, or whether the road was still under warranty**, and the two aren't linked. Rasta is the accountability layer that sits *after* MARG. It serves the **Bombay High Court order of 13 Oct 2025** (Suo Motu PIL 71/2013): repairs within 48 hours, and compensation recovered from responsible officers *and contractors*.
+BMC's **MyBMC MARG** app takes complaints and closes them. The concretisation dashboard names contractors for new cement roads. **Neither shows the bill, whether the repair held, or whether the road was still under warranty**, and the two aren't linked. My BMC Rasta is the accountability layer that sits *after* MARG. It serves the **Bombay High Court order of 13 Oct 2025** (Suo Motu PIL 71/2013): repairs within 48 hours, and compensation recovered from responsible officers *and contractors*.
 
 ## What's inside
 
@@ -44,7 +44,7 @@ BMC's **MyBMC MARG** app takes complaints and closes them. The concretisation da
 - **Report in a minute, in the style of MyBMC MARG.**
   - **Location:** a picker like a food-delivery app's, with search, "use current location", and the ward captured automatically.
   - **Photo:** Claude fills the grievance type, subtype and description from it.
-  - **Voice first:** "Just say it" in Hindi, Marathi or English, and Claude fills the form.
+  - **Voice first:** "Just say it" in English or any of Sarvam's 22 supported Indian languages, including Gujarati, Marathi and Telugu. The language is detected automatically, and Claude fills the form.
   - **Duplicates:** if the same problem is already reported within 100 m, you can support it instead of filing again.
 - **Track it:** status (Registered, In progress, Closed, Invalid), the service deadline, who fixed it, billed vs fair price, and before/after photos. Closed complaints can be rated or renewed, as in MARG.
 - **Sadak Kundli**, a life chart for every road:
@@ -78,13 +78,13 @@ English, **हिंदी** and **मराठी** across the main citizen and
 | Recovery notice and one-line road verdict | `recoveryNotice`, `roadVerdict` |
 | Translation between English, Hindi, Marathi and Hinglish | `translate` |
 
-All calls use structured outputs where a form is filled. The model is set by `RASTA_MODEL` (default `claude-haiku-5-5`, the cheapest). Without an API key the app still runs, using rule-based fallbacks.
+All calls use structured outputs where a form is filled. The model is set by `RASTA_MODEL` (default `claude-haiku-5-5`). Without an API key the app still runs, using rule-based fallbacks except for photo verification: attached photos cannot be submitted until verification succeeds. Unrelated images are rejected, and unavailable verification never guesses a pothole. Users can replace or remove the attachment and submit a text complaint. Officer review remains required; AI does not approve complaints.
 
 ## Run it locally
 
 ```bash
 npm install
-cp .env.example .env.local     # add ANTHROPIC_API_KEY
+cp .env.example .env.local     # add ANTHROPIC_API_KEY and SARVAM_API_KEY
 npm run dev                    # http://localhost:3000
 ```
 
@@ -94,13 +94,13 @@ The logins are demos and details are pre-filled. For the officer, choose **Ward 
 |---|---|---|
 | `ANTHROPIC_API_KEY` | recommended | Every AI feature |
 | `RASTA_MODEL` | no | Defaults to `claude-haiku-5-5` |
-| `DEEPGRAM_API_KEY` | no | Speech-to-text for English/Hinglish (nova-3 multi) and Hindi (nova-2). Marathi uses the browser's recogniser. Without a key, the browser handles all three |
+| `SARVAM_API_KEY` | for voice | Sarvam Saaras v4 speech-to-text with automatic language detection across English and 22 Indian languages. Mixed-language speech keeps English words in English and Indian-language words in their native script. Without a key, type a complaint or use the sample |
 | `CLOUDINARY_URL` | **yes on Vercel** | `cloudinary://<api_key>:<api_secret>@<cloud_name>`. Shared storage for complaint photos and app state, so every serverless instance sees the same complaints |
 
 ## Deploy to Vercel
 
 1. Import this repo in Vercel. The framework (Next.js) is detected automatically.
-2. Under **Settings → Environment Variables** add `ANTHROPIC_API_KEY`, `CLOUDINARY_URL`, and optionally `RASTA_MODEL` and `DEEPGRAM_API_KEY`.
+2. Under **Settings → Environment Variables** add `ANTHROPIC_API_KEY`, `CLOUDINARY_URL`, `SARVAM_API_KEY` (for voice), and optionally `RASTA_MODEL`.
 3. Deploy.
 
 Things to know:
@@ -108,6 +108,7 @@ Things to know:
 - **Shared state lives in Cloudinary.** New complaints, support, decisions, tenders and notices are kept in one JSON file in Cloudinary (`rasta/state.json`), and photos in `rasta/photos/`. Every request reads the latest copy, so any serverless instance can serve any page. Without `CLOUDINARY_URL` the app uses a local file, which is fine on your laptop but not on Vercel. A real deployment would use a database.
 - **Location:** GPS is watched for up to 12 seconds and the most accurate fix is kept; accuracy is shown as ±metres. Addresses and place search come from OpenStreetMap Nominatim.
 - **AI calls take up to 30 seconds.** AI routes set `maxDuration = 60`.
+- **Voice recordings stop automatically at 29 seconds**, within Sarvam's 30-second REST limit. No language selection is needed. See the [Sarvam speech-to-text reference](https://docs.sarvam.ai/api-reference/speech-to-text/transcribe).
 
 ## Demo script (3 minutes)
 

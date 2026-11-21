@@ -23,6 +23,17 @@
 }
 
 * { box-sizing: border-box; }
+.brand-logo { display: block; width: 104px; height: 55px; flex: none; }
+.brand-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.brand-logo-large { width: 260px; height: 136px; }
+@media (max-width: 600px) {
+  .topbar-in { gap: 7px !important; }
+  .topnav { margin-left: 0 !important; gap: 0 !important; }
+  .topbar .brand-logo { width: 78px; height: 42px; }
+  .topbar .who .btn { padding-left: 6px; padding-right: 6px; }
+  .topbar .avatar { display: none; }
+  .brand-logo-large { width: 210px; height: 110px; }
+}
 html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);

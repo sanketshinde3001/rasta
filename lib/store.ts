@@ -2,7 +2,7 @@ import "server-only";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { db, type Complaint } from "./data";
+import { db, type Complaint, type PhotoAI } from "./data";
 import { cloudOn, cloudReadJson, cloudWriteJson } from "./cloud";
 
 // Runtime state on top of the read-only dataset: new complaints, status changes, supporters, tenders.
@@ -21,6 +21,7 @@ export type Tender = {
 };
 export type ClawState = { excluded: string[]; reviewed_at?: string; notice?: { lang: string; text: string; at: string }; sent_at?: string; by?: string };
 type State = {
+  photoReviews?: Record<string, PhotoAI>;
   seq: number; created: Complaint[]; patches: Record<string, Partial<Complaint>>; tenders: Tender[];
   claw?: Record<string, ClawState>; inspections?: Record<string, string>; verdicts?: Record<string, string>;
 };
@@ -88,6 +89,16 @@ function save() {
 }
 export async function flush() {
   await pending;
+}
+
+export function recordPhotoReview(url: string, review: PhotoAI) {
+  const s = load();
+  s.photoReviews = { ...s.photoReviews, [url]: review };
+  save();
+}
+
+export function getPhotoReview(url: string): PhotoAI | null {
+  return load().photoReviews?.[url] || null;
 }
 
 export const DEMO_CITIZEN = { id: "CIT-DEMO", name: "Priya Kulkarni", phone: "98200 12345", ward: "L", area: "Kurla West" };

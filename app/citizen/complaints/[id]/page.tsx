@@ -10,6 +10,7 @@ import { getT } from "@/lib/serverLang";
 import { getSession } from "@/lib/session";
 import { getComplaint } from "@/lib/store";
 import { db } from "@/lib/data";
+import { isAcceptedPhoto } from "@/lib/photo-validation";
 import { jobFor, FLAG_TEXT } from "@/lib/views";
 import { BUCKET_STYLE, SLA_HOURS, bucketOf, fmtDate, fmtDateTime, inr, photoOf, statusNote } from "@/lib/taxonomy";
 
@@ -135,12 +136,12 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
           {!c.photo && c.source !== "app" && <p className="tiny muted" style={{ marginTop: 6 }}>Sample photo. {c.photo_description ? `Citizen's photo showed: ${c.photo_description}` : ""}</p>}
           <Tx text={c.description} lang={c.source === "app" ? c.language : c.language} />
           {c.landmark && <p className="small ink2"><Ico name="pin" size={14} /> {c.landmark}</p>}
-          {c.ai && (
+          {isAcceptedPhoto(c.ai) ? (
             <div className="chips">
               <span className="pill ai-tag"><Ico name="sparkles" size={13} /> AI: {c.ai.subcategory}, {c.ai.severity} severity</span>
               {c.ai.hazards?.map((h) => <span key={h} className="pill ai-tag">{h}</span>)}
             </div>
-          )}
+          ) : c.photo ? <span className="pill gray">Photo not verified</span> : null}
           {c.override_reason && <p className="small ink2"><b>Filed separately from #{c.similar_to}:</b> {c.override_reason}</p>}
         </section>
 

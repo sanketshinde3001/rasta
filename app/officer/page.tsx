@@ -6,6 +6,8 @@ import { wardQueue } from "@/lib/officer";
 import { db } from "@/lib/data";
 import { getT } from "@/lib/serverLang";
 import { BUCKET_STYLE, CATEGORIES, SEASONS, currentSeason, fmtDate, photoOf } from "@/lib/taxonomy";
+import { auditOverview } from "@/lib/audit-overview";
+import { MoneyCharts } from "./MoneyCharts";
 
 export const dynamic = "force-dynamic";
 
@@ -64,12 +66,14 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
           <span className="pill ai-tag" title={SEASONS[season].hint}><Ico name="cloud" size={14} /> {SEASONS[season].label} weighting</span>
         </div>
 
-        <div className="grid3" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        <div className="grid3 officer-stats" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
           <div className="card tight stat"><b>{q.filter((x) => x.b === "Registered").length}</b><span>{t("o.review")}</span></div>
           <div className="card tight stat"><b className="red">{open.filter((x) => x.p.level === "High").length}</b><span>{t("o.high")}</span></div>
           <div className="card tight stat"><b>{open.filter((x) => x.overdue).length}</b><span>{t("o.overdue")}</span></div>
           <div className="card tight stat"><b>{newToday}</b><span>{t("o.new")}</span></div>
         </div>
+
+        <MoneyCharts {...auditOverview(db().workOrders)} />
 
         <div className="between wrap-gap">
           <div className="chips">
@@ -79,7 +83,7 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
               </Link>
             ))}
           </div>
-          <div className="row">
+          <div className="row officer-filters">
             <div className="seg">
               <Link href={href({ cat: undefined })} className={!sp.cat ? "on" : ""}>All types</Link>
               {Object.keys(CATEGORIES).map((c) => (
