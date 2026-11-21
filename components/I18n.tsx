@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LANGS, LANG_NAME, needsTranslation, type Lang } from "@/lib/lang";
+import { LANGS, detectLang, needsTranslation, type Lang } from "@/lib/lang";
 import { tr } from "@/lib/i18n";
 import { Ico } from "./Ico";
 
@@ -44,7 +44,7 @@ export function Tx({ text, lang: known, className, as = "p" }: { text: string; l
   const [show, setShow] = useState(false);
   const Tag = as;
   const need = needsTranslation(text, ui, known);
-  const src = known && known !== "unknown" ? known : null;
+  const src = known && known !== "unknown" ? known : detectLang(text);
 
   async function go() {
     const k = `${ui}|${text}`;
@@ -75,7 +75,7 @@ export function Tx({ text, lang: known, className, as = "p" }: { text: string; l
           ) : (
             <button className="linkbtn" onClick={go}><Ico name="globe" size={13} /> {t("tr.to")}</button>
           )}
-          {show && out && <span className="muted"> · {t("tr.from", { l: LANG_NAME[src || ""] || "another language" })}</span>}
+          {show && out && <span className="muted"> · {t("tr.from", { l: src ? t(`lang.${src}`) : "—" })}</span>}
         </span>
       )}
     </Tag>

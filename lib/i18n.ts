@@ -106,6 +106,10 @@ const D: Record<string, [string, string, string]> = {
   "tr.to": ["Translate to English", "हिंदी में अनुवाद करें", "मराठीत भाषांतर करा"],
   "tr.orig": ["Show original", "मूल देखें", "मूळ पाहा"],
   "tr.from": ["Translated from {l}", "{l} से अनुवादित", "{l} मधून भाषांतरित"],
+  "lang.en": ["English", "अंग्रेज़ी", "इंग्रजी"],
+  "lang.hi": ["Hindi", "हिंदी", "हिंदी"],
+  "lang.mr": ["Marathi", "मराठी", "मराठी"],
+  "lang.hi-en": ["Hinglish", "हिंग्लिश", "हिंग्लिश"],
   "tr.busy": ["Translating…", "अनुवाद हो रहा है…", "भाषांतर होत आहे…"],
 
   // officer

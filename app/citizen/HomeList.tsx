@@ -51,7 +51,7 @@ export function HomeList({ rows }: { rows: Row[] }) {
               {c.photo ? <img className="thumb" src={c.photo} alt="" /> : <span className="thumb"><Ico name="mic" size={20} /></span>}
               <div className="main">
                 <div className="tiny muted num">{c.id}</div>
-                <div className="title ellipsis">{c.sub}</div>
+                <div className="title ellipsis">{t(`sub.${c.sub}`)}</div>
                 <div className="small muted ellipsis">{c.road} · {fmtDate(c.at)}{c.supported ? " · you support this" : ""}</div>
               </div>
               <span className={`pill ${BUCKET_STYLE[c.bucket]}`}>{t(`st.${c.bucket}`)}</span>

@@ -4,6 +4,7 @@ import { Ico } from "@/components/Ico";
 import { requireRole } from "@/lib/session";
 import { wardQueue } from "@/lib/officer";
 import { db } from "@/lib/data";
+import { getT } from "@/lib/serverLang";
 import { BUCKET_STYLE, CATEGORIES, SEASONS, currentSeason, fmtDate, photoOf } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ const PER_PAGE = 15;
 export default async function Inbox({ searchParams }: { searchParams: Promise<{ view?: string; cat?: string; sort?: string; page?: string }> }) {
   const s = await requireRole("officer");
   const sp = await searchParams;
+  const { t } = await getT();
   const view = sp.view || "review";
   const sort = sp.sort || "priority";
   const season = currentSeason();
@@ -57,16 +59,16 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
         <div className="between wrap-gap">
           <div>
             <p className="muted small">Ward {s.ward} · {ward.ward_name}</p>
-            <h1 style={{ marginTop: 2 }}>Complaints</h1>
+            <h1 style={{ marginTop: 2 }}>{t("o.complaints")}</h1>
           </div>
           <span className="pill ai-tag" title={SEASONS[season].hint}><Ico name="cloud" size={14} /> {SEASONS[season].label} weighting</span>
         </div>
 
         <div className="grid3" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-          <div className="card tight stat"><b>{q.filter((x) => x.b === "Registered").length}</b><span>waiting for review</span></div>
-          <div className="card tight stat"><b className="red">{open.filter((x) => x.p.level === "High").length}</b><span>high priority, not fixed</span></div>
-          <div className="card tight stat"><b>{open.filter((x) => x.overdue).length}</b><span>past their deadline</span></div>
-          <div className="card tight stat"><b>{newToday}</b><span>new from the Rasta app</span></div>
+          <div className="card tight stat"><b>{q.filter((x) => x.b === "Registered").length}</b><span>{t("o.review")}</span></div>
+          <div className="card tight stat"><b className="red">{open.filter((x) => x.p.level === "High").length}</b><span>{t("o.high")}</span></div>
+          <div className="card tight stat"><b>{open.filter((x) => x.overdue).length}</b><span>{t("o.overdue")}</span></div>
+          <div className="card tight stat"><b>{newToday}</b><span>{t("o.new")}</span></div>
         </div>
 
         <div className="between wrap-gap">
@@ -100,7 +102,7 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
                 {photoOf(c) ? <img className="thumb hide-sm" src={photoOf(c)!} alt=""  style={{ width: 48, height: 48 }} /> : <span className="thumb hide-sm"  style={{ width: 48, height: 48 }}><Ico name="mic" size={20} /></span>}
                 <div className="main">
                   <div className="row" style={{ gap: 8 }}>
-                    <span className="title">{c.category_reported}</span>
+                    <span className="title">{t(`sub.${c.category_reported}`)}</span>
                     {c.source === "app" && <span className="pill ai-tag" style={{ height: 21, fontSize: 11.5 }}>NEW</span>}
                     {overdue && <span className="pill p-High" style={{ height: 21, fontSize: 11.5 }}>Overdue</span>}
                   </div>

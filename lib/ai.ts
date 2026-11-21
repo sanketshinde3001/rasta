@@ -185,13 +185,18 @@ export async function planBrief(facts: object) {
 }
 
 // ---------- 6. Translation (EN / HI / MR) ----------
-const LNAME: Record<string, string> = { en: "English", hi: "Hindi (Devanagari script)", mr: "Marathi (Devanagari script)" };
+const LNAME: Record<string, string> = {
+  en: "English",
+  hi: "Hindi (हिंदी, Devanagari script)",
+  mr: "Marathi (मराठी, Devanagari script). Marathi, NOT Hindi: use Marathi grammar and words such as आहे, नाही, करा, रस्त्यावर, खड्डा, लवकर",
+};
 export async function translate(text: string, to: "en" | "hi" | "mr"): Promise<string> {
   if (!hasKey()) return text;
   const res = await client().messages.create({
     model: MODEL,
-    max_tokens: 2000,
-    system: `Translate the user's text into ${LNAME[to]}. It is a Mumbai civic text (road complaints, repair records, notices). Keep road names, place names, IDs (like BMC25-000027, WO25-00123), rupee amounts and numbers exactly. Plain, simple words. Output only the translation, nothing else.`,
+    max_tokens: 8000,
+    output_config: { effort: "low" },
+    system: `Translate the user's text into ${LNAME[to]}. If the text is already in that language, rewrite it cleanly in that language. It is a Mumbai civic text (road complaints, repair records, notices). Keep road names, place names, IDs (like BMC25-000027, WO25-00123), rupee amounts and numbers exactly. Plain, simple words. Output only the translation, nothing else.`,
     messages: [{ role: "user", content: text }],
   });
   return res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
@@ -202,20 +207,22 @@ export async function recoveryNotice(facts: object, lang: "en" | "hi" | "mr"): P
   if (!hasKey()) return "AI key not set. " + JSON.stringify(facts).slice(0, 400);
   const res = await client().messages.create({
     model: MODEL,
-    max_tokens: 3000,
+    max_tokens: 12000,
+    output_config: { effort: "low" },
     system: `You draft a formal recovery notice from a BMC ward office to a road-repair contractor, in ${LNAME[lang]}.
 Structure: heading "Notice for recovery / adjustment of payments" (translated), reference line, short facts paragraph, a numbered list of work orders (ID, road, date, amount, reason), total, the request (repay or adjust against pending bills within 15 days, or show cause with documents), and for over-billed jobs a line that the excess will be held from pending payments. Legal basis: the Defect Liability Period clause of the contract (3 years for road surfaces), and the Bombay High Court order of 13 October 2025 in Suo Motu PIL 71 of 2013, which directs recovery from responsible contractors.
-Rules: use only the facts given; cite every work order ID; neutral tone, no accusations ("our records show", "subject to verification"); keep it under 350 words; end with "Assistant Engineer (Roads), Ward <ward>". Plain text, no markdown tables.`,
+Rules: use only the facts given; cite every work order ID; neutral tone, no accusations ("our records show", "subject to verification"); keep it under 350 words; end with "Assistant Engineer (Roads), Ward <ward>". Plain text only: no markdown, no ** or #.`,
     messages: [{ role: "user", content: JSON.stringify(facts, null, 1) }],
   });
-  return res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+  return res.content.map((b) => (b.type === "text" ? b.text : "")).join("").replace(/\*\*/g, "").trim();
 }
 
 export async function roadVerdict(facts: object, lang: "en" | "hi" | "mr"): Promise<string> {
   if (!hasKey()) return "";
   const res = await client().messages.create({
     model: MODEL,
-    max_tokens: 400,
+    max_tokens: 4000,
+    output_config: { effort: "low" },
     system: `Write ONE or two plain sentences in ${LNAME[lang]} summing up this road's repair history for a citizen: how many repairs, money spent, whether under warranty, whether repairs held. Use only the numbers given. Neutral, no accusations. Under 45 words.`,
     messages: [{ role: "user", content: JSON.stringify(facts) }],
   });
