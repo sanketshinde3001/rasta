@@ -28,6 +28,17 @@ Login is a demo: the citizen gets an OTP pre-filled, and the officer picks a war
 - **Voice:** uses Deepgram when `DEEPGRAM_API_KEY` is set, otherwise the browser's own speech recognition. There is also a "sample voice note" button for demos.
 - **Sample photos:** each one carries a Kurla geotag, so the duplicate check has something to find. They are openly licensed photos from Wikimedia Commons; see `public/samples/CREDITS.md`.
 
+## What's new in round 2
+
+- **Real ward map:** actual BMC ward boundaries (DataMeet Municipal Spatial Data); 93% of dataset complaints fall inside their recorded ward. Each ward shows budget allocated, spent and left.
+- **Delivery-app location picker:** move the map under a fixed pin, search areas, roads, hospitals and schools offline, or "Use current location". The ward is captured automatically.
+- **Form modelled on MyBMC MARG:** Grievance type and subtype, Description (250 chars), Upload/Capture photo, Ward (auto-captured), Acknowledgement (Anonymous, mobile, email). Status tiles: Registered, In progress, Closed, Invalid. Closed complaints get a star rating and **Renew complaint**, as in MARG.
+- **Voice first:** "Just say it". Claude fills the form, finds the spoken place on the map, and asks only for what is missing.
+- **Contractor scorecards for citizens:** an A–E grade, "out of 10 repairs" icon rows, city comparison bars, and money questions.
+- **Custom RTI letter** for any job (from a complaint, a contractor page, or the Your rights page).
+- **Officer:** paginated inbox, an "Approved by you" view, and the next step to fund it. The smart budget has a 20% emergency reserve, season buttons, and issue cards with signals (school or hospital, flood spot, accidents, bus route, failed before).
+- **More of the dataset used:** social media posts and tide-sensitive flood spots now raise priority; rainfall explains failed repairs on the map.
+
 ## How it works
 
 - **Data:** `data/*.json` is exported from the hackathon dataset plus the Rupee Trail audit engine (`../rupee-trail`) by `npm run data`. It covers 6,500 complaints, 2,499 work orders with audit flags, 291 roads, 24 ward polygons, contractor scorecards, the next-rupee plan, and the Claude audit-court verdicts.
@@ -43,4 +54,4 @@ Login is a demo: the citizen gets an OTP pre-filled, and the officer picks a war
 4. **Smart budget:** switch the season to Pre-monsoon and drains jump up. "Write with AI" turns the plan into a note. Open a tender on the top issue.
 5. **Tender:** Analyse bids, then award. The citizen's complaint now shows who is fixing it.
 
-All data is synthetic and every contractor is fictional. Dataset: [Claude-Impact-Labs-data-2](https://github.com/SumeetGDoshi/Claude-Impact-Labs-data-2), CC BY 4.0. Map © OpenStreetMap contributors.
+All data is synthetic and every contractor is fictional. Ward boundaries: [DataMeet Municipal Spatial Data](https://github.com/datameet/Municipal_Spatial_Data) (`scripts/build_wards.py`). Dataset: [Claude-Impact-Labs-data-2](https://github.com/SumeetGDoshi/Claude-Impact-Labs-data-2), CC BY 4.0. Map © OpenStreetMap contributors.
