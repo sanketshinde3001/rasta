@@ -21,6 +21,7 @@ export type PlanRow = {
   key: string; road_id: string; road_name: string; issue: string; why: string; method: string; est_cost_inr: number;
   cost_to_bmc_inr: number; dlp_claim: string; expected_fail_rate: number; suggested_contractor: string | null;
   complaints: number; days_open: number; complaint_ids: string[]; parts: Record<string, number>; isNew: boolean;
+  facilities: string | null; flood_hotspot: string | null; accidents: number; bus: boolean; repeat: boolean; approved: boolean;
 };
 
 export function wardPlanRows(ward: string): PlanRow[] {
@@ -33,7 +34,9 @@ export function wardPlanRows(ward: string): PlanRow[] {
       expected_fail_rate: p.expected_fail_rate, suggested_contractor: p.suggested_contractor?.replace(" (synthetic)", "") || null,
       complaints: p.complaints, days_open: p.days_open, complaint_ids: String(p.complaint_ids || "").split("|").filter(Boolean),
       parts: { severity: p.severity, safety: p.safety, access: p.access, flood: p.flood, traffic: p.traffic, demand: p.demand },
-      isNew: false,
+      isNew: false, facilities: p.facilities ? String(p.facilities).replace(/ \(synthetic\)/g, "") : null,
+      flood_hotspot: p.flood_hotspot || null, accidents: Math.round(Number(p.road_accidents) || 0),
+      bus: /bus route/.test(String(p.why)), repeat: !!p.repeat_failure && String(p.repeat_failure) !== "False", approved: false,
     }));
   // complaints filed in the app that the officer verified or hasn't reviewed yet
   for (const c of allComplaints().filter((c) => c.source === "app" && c.ward_code === ward && ["Registered", "In progress"].includes(bucketOf(c.status)))) {
@@ -53,8 +56,12 @@ export function wardPlanRows(ward: string): PlanRow[] {
       why: `${c.category_reported}; new app complaint${c.status === "Verified" ? ", verified by you" : ""}; ${pr.reasons.map((r) => r.text).slice(0, 2).join("; ")}`,
       method: m.method, est_cost_inr: m.cost, cost_to_bmc_inr: dlp ? 0 : m.cost, dlp_claim: dlp ? "Y" : "N",
       expected_fail_rate: m.fail, suggested_contractor: null, complaints: 1, days_open: 0, complaint_ids: [c.complaint_id],
-      parts: pr.parts, isNew: true,
+      parts: pr.parts, isNew: true, facilities: pr.reasons.find((r) => r.icon === "hospital" || r.icon === "school")?.text || null,
+      flood_hotspot: pr.reasons.find((r) => r.icon === "waves")?.text || null, accidents: road?.accidents || 0,
+      bus: road?.bus_route === "Y", repeat: pr.repeat_failure, approved: c.status === "Verified",
     });
   }
+  const verified = new Set(allComplaints().filter((c) => c.status === "Verified" && c.ward_code === ward).map((c) => c.complaint_id));
+  for (const r of rows) if (r.complaint_ids.some((id) => verified.has(id))) r.approved = true;
   return rows;
 }

@@ -12,11 +12,14 @@ const VIEWS = [
   { k: "review", label: "To review" },
   { k: "high", label: "High priority" },
   { k: "overdue", label: "Overdue" },
+  { k: "approved", label: "Approved by you" },
   { k: "progress", label: "In progress" },
   { k: "all", label: "All" },
 ];
 
-export default async function Inbox({ searchParams }: { searchParams: Promise<{ view?: string; cat?: string; sort?: string }> }) {
+const PER_PAGE = 15;
+
+export default async function Inbox({ searchParams }: { searchParams: Promise<{ view?: string; cat?: string; sort?: string; page?: string }> }) {
   const s = await requireRole("officer");
   const sp = await searchParams;
   const view = sp.view || "review";
@@ -29,6 +32,7 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
     review: (x) => x.b === "Registered",
     high: (x) => (x.b === "Registered" || x.b === "In progress") && x.p.level === "High",
     overdue: (x) => x.overdue,
+    approved: (x) => x.c.status === "Verified",
     progress: (x) => x.b === "In progress",
     all: () => true,
   };
@@ -36,9 +40,12 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
   if (sp.cat) rows = rows.filter((x) => x.c.category === sp.cat);
   rows.sort((a, b) => (sort === "recent" ? (b.c.received_at > a.c.received_at ? 1 : -1) : b.p.score - a.p.score));
   const newToday = q.filter((x) => x.c.source === "app" && x.b === "Registered").length;
+  const pages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
+  const page = Math.min(pages, Math.max(1, Number(sp.page) || 1));
   const href = (o: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const m = { view, cat: sp.cat, sort, ...o };
+    const m: Record<string, string | undefined> = { view, cat: sp.cat, sort, ...o };
+    if (!("page" in o)) delete m.page;
     Object.entries(m).forEach(([k, v]) => v && p.set(k, v));
     return `/officer?${p}`;
   };
@@ -86,7 +93,7 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
 
         <div className="card" style={{ padding: "4px 16px" }}>
           <div className="list">
-            {rows.slice(0, 60).map(({ c, b, p, overdue }) => (
+            {rows.slice((page - 1) * PER_PAGE, page * PER_PAGE).map(({ c, b, p, overdue }) => (
               <Link key={c.complaint_id} href={`/officer/complaints/${c.complaint_id}`} className="crow">
                 <span className={`score ${p.level}`} title={`${p.level} priority`}>{p.score}</span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -109,7 +116,16 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
             {!rows.length && <p className="empty">Nothing here. Nice.</p>}
           </div>
         </div>
-        {rows.length > 60 && <p className="small muted">Showing the top 60 of {rows.length}.</p>}
+        {view === "approved" && rows.length > 0 && (
+          <div className="banner info small"><Ico name="wallet" size={18} /><div>Approved complaints are added to your repair plan. <Link href="/officer/budget" className="bold" style={{ textDecoration: "underline" }}>Fund them in Smart budget</Link>, then open a tender.</div></div>
+        )}
+        {pages > 1 && (
+          <div className="pager">
+            <Link href={href({ page: String(page - 1) })} className={`btn sm ${page === 1 ? "disabled" : ""}`} aria-disabled={page === 1}><Ico name="back" size={16} /> Previous</Link>
+            <span className="small muted num">Page {page} of {pages} · {rows.length} complaints</span>
+            <Link href={href({ page: String(page + 1) })} className={`btn sm ${page === pages ? "disabled" : ""}`} aria-disabled={page === pages}>Next <Ico name="chevron" size={16} /></Link>
+          </div>
+        )}
       </main>
     </>
   );

@@ -76,11 +76,14 @@ export function Decision({ id, status, decision }: { id: string; status: string;
     <section className="card stack">
       <h2>Your decision</h2>
       {decision && (
-        <div className="banner ok small"><Ico name="check" size={18} /><div><b>{decision.action === "verify" ? "Verified" : decision.action === "invalid" ? "Marked invalid" : "Marked fixed"}</b> · {fmtDateTime(decision.at)}<div>{decision.note}</div></div></div>
+        <div className="banner ok small"><Ico name="check" size={18} /><div><b>{decision.action === "verify" ? "Approved" : decision.action === "invalid" ? "Marked invalid" : "Marked fixed"}</b> · {fmtDateTime(decision.at)}<div>{decision.note}</div></div></div>
+      )}
+      {status === "Verified" && (
+        <a href="/officer/budget" className="btn primary big"><Ico name="wallet" /> Next: fund it in Smart budget</a>
       )}
       {open && mode === "idle" && (
         <>
-          <button className="btn primary big" disabled={busy} onClick={() => act("verify")}><Ico name="check" /> Confirm valid</button>
+          <button className="btn primary big" disabled={busy} onClick={() => act("verify")}><Ico name="check" /> Approve (valid)</button>
           <button className="btn block" disabled={busy} onClick={() => setMode("invalid")}>Mark invalid</button>
         </>
       )}
@@ -92,7 +95,7 @@ export function Decision({ id, status, decision }: { id: string; status: string;
           <button className="btn ghost block" onClick={() => setMode("idle")}>Cancel</button>
         </>
       )}
-      {inProgress && <button className="btn primary block" disabled={busy} onClick={() => act("resolve")}><Ico name="check" /> Mark as fixed</button>}
+      {inProgress && <button className={`btn block ${status === "Verified" ? "" : "primary"}`} disabled={busy} onClick={() => act("resolve")}><Ico name="check" /> Mark as fixed</button>}
       {!open && !inProgress && !decision && <p className="small muted">This complaint is closed.</p>}
       {err && <div className="banner bad small">{err}</div>}
     </section>

@@ -65,7 +65,7 @@ let cache: null | {
   workOrders: WorkOrder[]; woMap: Map<string, WorkOrder>; woByRoad: Map<string, WorkOrder[]>;
   complaints: Complaint[]; contractors: Contractor[]; plan: any[]; briefs: Record<string, any>;
   ctx: { facilities: any[]; hotspots: any[]; localities: any[]; rate_card: any[]; contractors_list: any[] };
-  summary: any;
+  summary: any; signals: { social_by_road: Record<string, number>; social_by_locality: Record<string, number>; social_posts: any[]; rain: any[]; big_tide_days: number; max_tide_m: number };
 } = null;
 
 export function db() {
@@ -86,7 +86,7 @@ export function db() {
     roads, roadMap: new Map(roads.map((r) => [r.road_id, r])), workOrders,
     woMap: new Map(workOrders.map((w) => [w.work_order_id, w])), woByRoad, complaints,
     contractors: read<Contractor[]>("contractors.json"), plan: read<any[]>("plan.json"),
-    briefs: read<Record<string, any>>("briefs.json"), ctx: read("context.json"), summary: read("summary.json"),
+    briefs: read<Record<string, any>>("briefs.json"), ctx: read("context.json"), summary: read("summary.json"), signals: read("signals.json"),
   };
   return cache;
 }

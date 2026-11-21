@@ -73,6 +73,10 @@ export function priorityOf(c: Complaint, season: Season): Priority {
       if (d < 600) {
         flood = Math.max(flood, 1 - d / 1200);
         reasons.push({ icon: "waves", text: `${Math.round(d)} m from flood hotspot ${h.name} (flooded ${h.years_flagged_last_5} of last 5 years)` });
+        if (h.tide_sensitive === "Y" && WATER.has(c.category_reported)) {
+          flood = Math.min(1, flood + 0.15);
+          reasons.push({ icon: "waves", text: `Tide-sensitive spot: floods at high tide (${db().signals.big_tide_days} big-tide days this season)` });
+        }
         break;
       }
     }
@@ -86,8 +90,11 @@ export function priorityOf(c: Complaint, season: Season): Priority {
 
   // demand
   const supporters = (c.upvotes || 0) + (c.supporters?.length || 0);
-  const demand = Math.min(1, supporters / 30);
+  const sig = db().signals;
+  const social = (road ? sig.social_by_road[road.road_name] || 0 : 0) + (c.locality_text ? sig.social_by_locality[c.locality_text] || 0 : 0);
+  const demand = Math.min(1, supporters / 30 + social / 40);
   if (supporters >= 10) reasons.push({ icon: "users", text: `${supporters} people support this complaint` });
+  if (social >= 3) reasons.push({ icon: "users", text: `${social} social media posts about ${road && sig.social_by_road[road.road_name] ? road.road_name : c.locality_text}` });
 
   const parts = { severity: sev, safety, access, flood, traffic, demand };
   const score = Math.round(
