@@ -18,8 +18,10 @@ export type Tender = {
   closes_at: string; status: "Open" | "Awarded"; awarded_bid?: string | null; awarded_at?: string;
   analysis?: any; bids: Bid[]; plan_key?: string; contractor_hint?: string | null;
 };
+export type ClawState = { excluded: string[]; reviewed_at?: string; notice?: { lang: string; text: string; at: string }; sent_at?: string; by?: string };
 type State = {
   seq: number; created: Complaint[]; patches: Record<string, Partial<Complaint>>; tenders: Tender[];
+  claw?: Record<string, ClawState>; inspections?: Record<string, string>; verdicts?: Record<string, string>;
 };
 
 function file() {
@@ -132,4 +134,31 @@ export function updateTender(id: string, patch: Partial<Tender>) {
   if (i >= 0) s.tenders[i] = { ...s.tenders[i], ...patch };
   save();
   return s.tenders[i];
+}
+
+export function clawState(key: string): ClawState {
+  return load().claw?.[key] || { excluded: [] };
+}
+export function setClawState(key: string, patch: Partial<ClawState>) {
+  const s = load();
+  s.claw = s.claw || {};
+  s.claw[key] = { ...(s.claw[key] || { excluded: [] }), ...patch };
+  save();
+  return s.claw[key];
+}
+export function inspections() {
+  return load().inspections || {};
+}
+export function markInspection(roadId: string, at: string) {
+  const s = load();
+  s.inspections = { ...(s.inspections || {}), [roadId]: at };
+  save();
+}
+export function getVerdict(k: string) {
+  return load().verdicts?.[k] || null;
+}
+export function setVerdict(k: string, v: string) {
+  const s = load();
+  s.verdicts = { ...(s.verdicts || {}), [k]: v };
+  save();
 }
