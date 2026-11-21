@@ -24,7 +24,7 @@ export function TopBar({ session, active, wide }: { session: Session | null; act
   return (
     <header className="topbar">
       <div className="topbar-in" style={{ maxWidth: wide || session?.role === "officer" ? 1120 : 900 }}>
-        <Link href={session ? (session.role === "officer" ? "/officer" : "/citizen") : "/"} className="brand">
+        <Link href={session ? (session.role === "officer" ? "/officer" : "/citizen") : "/"} className="brand" style={{ flex: "none" }}>
           <span className="brand-mark"><Ico name="road" size={18} stroke={2.2} /></span>
           Rasta
         </Link>

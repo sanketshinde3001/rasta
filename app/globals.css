@@ -225,3 +225,11 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; }
   .wrap-wide .grid3 { grid-template-columns: 1fr 1fr !important; }
   .kv { grid-template-columns: 1fr; }
 }
+body:has(.overlay) .topbar { z-index: 0; }
+@media (max-width: 480px) {
+  .topbar-in { gap: 6px; padding: 0 12px; }
+  .topnav { margin-left: 4px; gap: 0; }
+  .topnav a { padding: 7px 9px; }
+  .who .avatar { display: none; }
+  .brand { font-size: 17px; }
+}
