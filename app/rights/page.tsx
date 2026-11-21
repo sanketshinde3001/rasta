@@ -16,7 +16,8 @@ const STEPS = [
 ];
 const KEEP = ["Photos of the spot", "Date and time", "Complaint number", "Hospital or repair bills"];
 
-export default async function Rights() {
+export default async function Rights({ searchParams }: { searchParams: Promise<{ wo?: string }> }) {
+  const { wo } = await searchParams;
   const s = await getSession();
   const roads = db().roads.map((r) => ({ id: r.road_id, name: r.road_name, seg: r.segment_no, ward: r.ward_code, dlp: r.under_dlp, last: r.last_resurfaced }));
   const groups = [24, 48, 72].map((h) => ({
@@ -67,9 +68,9 @@ export default async function Rights() {
           <div className="chips">{KEEP.map((k) => <span key={k} className="pill s-inv" style={{ fontWeight: 500 }}><Ico name="check" size={13} /> {k}</span>)}</div>
         </section>
 
-        <section className="card stack">
+        <section className="card stack" id="rti">
           <div className="row"><span className="tile-ico"><Ico name="file" /></span><div><h2>Ask for the bill (RTI)</h2><p className="small muted">Pick a repair. We write the letter for you.</p></div></div>
-          <RtiBuilder rows={rtiRows()} />
+          <RtiBuilder rows={rtiRows((w) => !!w.flags || w.work_order_id === wo)} preset={wo} />
         </section>
       </main>
     </>

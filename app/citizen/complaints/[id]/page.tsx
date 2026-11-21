@@ -4,6 +4,7 @@ import { TopBar } from "@/components/TopBar";
 import { Ico } from "@/components/Ico";
 import { CopyButton } from "@/components/CopyButton";
 import { SupportButton } from "@/components/SupportButton";
+import { Feedback } from "@/components/Feedback";
 import { getSession } from "@/lib/session";
 import { getComplaint } from "@/lib/store";
 import { db } from "@/lib/data";
@@ -176,6 +177,7 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
                 </div>
               )}
               {job.engineer_remark && <p className="small ink2">Engineer&apos;s note: “{job.engineer_remark}”</p>}
+              <Link href={`/rights?wo=${job.work_order_id}#rti`} className="btn block"><Ico name="file" size={18} /> Ask for this bill (RTI)</Link>
             </div>
           </section>
         )}
@@ -186,6 +188,8 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
             {c.history.map((h, i) => <p key={i} className="small ink2">{fmtDateTime(h.at)} · {h.text}</p>)}
           </section>
         )}
+
+        {mine && b === "Closed" && c.status !== "Closed - Duplicate" && <Feedback id={c.complaint_id} rating={c.rating} />}
 
         <section className="stack">
           {!mine && open && s?.role === "citizen" && <SupportButton id={c.complaint_id} supporters={supporters} already={supported} />}

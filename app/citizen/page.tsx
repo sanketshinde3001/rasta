@@ -3,7 +3,8 @@ import { TopBar } from "@/components/TopBar";
 import { Ico } from "@/components/Ico";
 import { requireRole } from "@/lib/session";
 import { allComplaints } from "@/lib/store";
-import { ComplaintRow } from "@/components/ComplaintRow";
+import { HomeList } from "./HomeList";
+import { bucketOf, photoOf } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
 
@@ -22,22 +23,15 @@ export default async function CitizenHome() {
         </div>
 
         <Link href="/citizen/new" className="btn primary big" style={{ height: 64, fontSize: 18 }}>
-          <Ico name="camera" size={22} /> Report a problem
+          <Ico name="plus" size={22} /> New registration
         </Link>
 
-        <section>
-          <div className="section-title">
-            <h2>Your complaints</h2>
-            <span className="muted small">{mine.length}</span>
-          </div>
-          <div className="card" style={{ padding: "4px 14px" }}>
-            {mine.length ? (
-              <div className="list">{mine.map((c) => <ComplaintRow key={c.complaint_id} c={c} href={`/citizen/complaints/${c.complaint_id}`} />)}</div>
-            ) : (
-              <p className="empty">No complaints yet.</p>
-            )}
-          </div>
-        </section>
+        <HomeList
+          rows={mine.map((c) => ({
+            id: c.complaint_id, sub: c.category_reported, road: c.road_name || c.locality_text || "Shared location", at: c.received_at,
+            bucket: bucketOf(c.status), photo: photoOf(c), supported: c.complainant_id !== s.id,
+          }))}
+        />
 
         <section>
           <div className="section-title"><h2>Know your city</h2></div>
