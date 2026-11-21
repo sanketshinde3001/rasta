@@ -268,3 +268,4 @@ body:has(.overlay) .topbar { z-index: 0; }
 .status-tile span { font-size: 13.5px; font-weight: 560; }
 .status-tile.s-reg { border-color: #e9c98f; } .status-tile.s-prog { border-color: #a9c3e6; } .status-tile.s-done { border-color: #9fd0b4; } .status-tile.s-inv { border-color: #cfd3d1; }
 .status-tile.on { outline: 2.5px solid var(--ink); outline-offset: 1px; }
+body:has(.lp) .topbar { z-index: 0; }

@@ -24,7 +24,7 @@ export default async function OfficerComplaint({ params }: { params: Promise<{ i
   const b = bucketOf(c.status);
   const road = c.road_id ? db().roadMap.get(c.road_id) : null;
   const past = road ? (db().woByRoad.get(road.road_id) || []).slice().reverse().slice(0, 5) : [];
-  const sims = c.lat && c.lon ? similarOpen(c.lat, c.lon, c.category, c.complaint_id).slice(0, 3) : [];
+  const sims = c.lat && c.lon ? similarOpen(c.lat, c.lon, c.category_reported, c.complaint_id).slice(0, 3) : [];
 
   return (
     <>
@@ -63,7 +63,7 @@ export default async function OfficerComplaint({ params }: { params: Promise<{ i
 
             {sims.length > 0 && (
               <section>
-                <div className="section-title"><h2>Open complaints within 150 m</h2></div>
+                <div className="section-title"><h2>Same problem within 100 m</h2></div>
                 <div className="card" style={{ padding: "4px 16px" }}>
                   <div className="list">
                     {sims.map(({ c: x, d }) => (

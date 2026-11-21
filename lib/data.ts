@@ -113,9 +113,10 @@ export function nearestRoad(lat: number, lon: number, maxM = 400): { road: Road;
   return best && best.dist <= maxM ? best : null;
 }
 
-export function nearestLocality(lat: number, lon: number) {
+export function nearestLocality(lat: number, lon: number, ward?: string | null) {
   let best: any = null, bd = Infinity;
   for (const l of db().ctx.localities) {
+    if (ward && l.ward_code !== ward) continue;
     const d = haversine(lat, lon, l.lat, l.lon);
     if (d < bd) { bd = d; best = l; }
   }
@@ -123,9 +124,10 @@ export function nearestLocality(lat: number, lon: number) {
 }
 
 export function locate(lat: number, lon: number) {
-  const ward = wardAt(lat, lon);
   const nr = nearestRoad(lat, lon);
-  const loc = nearestLocality(lat, lon);
+  // on a known road: that road's ward (the dataset's own assignment); otherwise the real ward boundary
+  const ward = nr && nr.dist < 80 ? nr.road.ward_code : wardAt(lat, lon);
+  const loc = nearestLocality(lat, lon, ward);
   const w = ward ? db().wardMap.get(ward) : null;
   return {
     lat, lon, ward_code: ward, ward_name: w?.ward_name ?? null, inside_bmc: !!ward,
@@ -143,7 +145,12 @@ export function demoSpot(kind: string) {
     paver: "Broken paver blocks", cavein: "Road cave-in",
   };
   const sub = want[kind] || "Pothole";
+  const words: Record<string, RegExp> = {
+    pothole: /pothole|khadda|gadd/i, waterlogging: /water|paani|pani|flood/i, manhole: /manhole|dhakkan|chamber/i,
+    paver: /paver/i, cavein: /sunk|cave|collapse|dhas|caved/i,
+  };
   const hit =
+    complaints.find((c) => c.ward_code === "L" && c.status === "Open" && c.category_reported === sub && c.lat && (words[kind] || /./).test(c.description)) ||
     complaints.find((c) => c.ward_code === "L" && c.status === "Open" && c.category_reported === sub && c.lat) ||
     complaints.find((c) => c.ward_code === "L" && c.status === "Open" && c.lat)!;
   // 25 m away from the existing complaint so the duplicate check has something to find

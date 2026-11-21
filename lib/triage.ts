@@ -7,9 +7,10 @@ import { priorityOf } from "./priority";
 import { bucketOf, currentSeason } from "./taxonomy";
 import { haversine } from "./geo";
 
-export function similarOpen(lat: number, lon: number, category: string | undefined, excludeId?: string, radius = 150) {
+// Same problem type (exact subtype) close by and still open
+export function similarOpen(lat: number, lon: number, sub: string | undefined, excludeId?: string, radius = 100) {
   return allComplaints()
-    .filter((c) => c.complaint_id !== excludeId && c.lat && c.lon && (!category || c.category === category))
+    .filter((c) => c.complaint_id !== excludeId && c.lat && c.lon && (!sub || c.category_reported === sub))
     .filter((c) => ["Registered", "In progress"].includes(bucketOf(c.status)))
     .map((c) => ({ c, d: haversine(lat, lon, c.lat!, c.lon!) }))
     .filter((x) => x.d <= radius)
@@ -25,7 +26,7 @@ export async function runTriage(id: string, force = false) {
   try {
     const p = priorityOf(c, currentSeason());
     const road = c.road_id ? db().roadMap.get(c.road_id) : null;
-    const sims = c.lat && c.lon ? similarOpen(c.lat, c.lon, c.category, c.complaint_id).slice(0, 3) : [];
+    const sims = c.lat && c.lon ? similarOpen(c.lat, c.lon, c.category_reported, c.complaint_id).slice(0, 3) : [];
     const past = road ? (db().woByRoad.get(road.road_id) || []).slice(-4) : [];
     const facts = {
       complaint_id: c.complaint_id, category: c.category_reported, description: c.description,
