@@ -58,13 +58,14 @@ const VoiceSchema = z.object({
   subcategory: z.enum(SUBS),
   severity: z.enum(["low", "medium", "high"]),
   description: z.string().describe("clean 1-2 sentence complaint in English, first person, as the citizen would write it"),
-  landmark: z.string().describe("landmark or road named by the speaker, or empty"),
+  landmark: z.string().describe("landmark, road or area named by the speaker (e.g. 'LBS Marg, Kurla station'), or empty if none"),
+  missing: z.array(z.enum(["problem type", "location", "description"])).describe("parts the speaker did not make clear"),
   language: z.string().describe("language spoken: English, Hindi, Marathi, Hinglish, ..."),
 });
 export type VoiceForm = z.infer<typeof VoiceSchema> & { by: "claude" | "offline" };
 
 export async function formFromSpeech(transcript: string): Promise<VoiceForm> {
-  if (!hasKey()) return { ...offlineClassify(transcript), landmark: "", language: "", by: "offline" };
+  if (!hasKey()) return { ...offlineClassify(transcript), landmark: "", language: "", missing: ["location"], by: "offline" };
   const out = await ask(
     `A Mumbai citizen described a road problem by voice (any of English, Hindi, Marathi, Hinglish). Fill the complaint form. Categories:\n${TAXONOMY}`,
     transcript,

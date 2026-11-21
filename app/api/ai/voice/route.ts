@@ -9,6 +9,6 @@ export async function POST(req: Request) {
   try {
     return NextResponse.json(await formFromSpeech(transcript));
   } catch {
-    return NextResponse.json({ ...offlineClassify(transcript), landmark: "", language: "", by: "offline" });
+    return NextResponse.json({ ...offlineClassify(transcript), landmark: "", language: "", missing: ["location"], by: "offline" });
   }
 }

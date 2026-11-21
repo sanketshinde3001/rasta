@@ -55,7 +55,7 @@ export type Complaint = {
   source?: "seed" | "app"; photo?: string | null; landmark?: string; ai?: PhotoAI | null; triage?: Triage | null;
   decision?: { action: string; note: string; at: string; by: string } | null; supporters?: string[];
   override_reason?: string; similar_to?: string | null; location_source?: string; citizen_name?: string;
-  history?: { at: string; text: string }[];
+  history?: { at: string; text: string }[]; anonymous?: boolean; notify_email?: string; rating?: number;
 };
 
 type Geo = { features: { properties: { ward_code: string; ward_name: string }; geometry: { type: string; coordinates: any } }[] };

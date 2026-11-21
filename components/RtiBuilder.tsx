@@ -148,7 +148,7 @@ export function RtiButton({ row }: { row: RtiRow }) {
     <>
       <button className="btn sm" onClick={() => setOpen(true)}><Ico name="file" size={15} /> RTI</button>
       {open && (
-        <div className="overlay" onClick={() => setOpen(false)}>
+        <div className="overlay" style={{ textAlign: "left" }} onClick={() => setOpen(false)}>
           <div className="sheet stack" onClick={(e) => e.stopPropagation()}>
             <div className="between">
               <h2>RTI request</h2>

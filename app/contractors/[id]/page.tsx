@@ -90,7 +90,7 @@ export default async function Contractor({ params }: { params: Promise<{ id: str
             <div className="dotrow"><span className="small muted">Others, same rain and flooding</span><Dots on={peers} cls="on-mid" /></div>
           </div>
           <p className={`small ${rv > 1.2 ? "red" : rv < 0.85 ? "green" : "ink2"}`} style={{ fontWeight: 560 }}>
-            {rv > 1.05 ? `Their repairs break ${rv.toFixed(1)}× as often as others working in the same conditions.` : rv < 0.95 ? `Their repairs last better than others: they break ${rv.toFixed(1)}× as often.` : "Their repairs last about as well as others."}
+            {rv > 1.05 ? `Their repairs break ${rv.toFixed(1)}× as often as others working in the same conditions.` : rv < 0.95 ? `Their repairs last longer than others in the same conditions: ${broke} of 10 break, against ${peers} of 10.` : "Their repairs last about as well as others."}
           </p>
         </section>
 

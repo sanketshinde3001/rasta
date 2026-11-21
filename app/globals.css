@@ -249,3 +249,22 @@ body:has(.overlay) .topbar { z-index: 0; }
 .lp-hint { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000; background: var(--ink); color: #fff; font-size: 13px; padding: 6px 12px; border-radius: 99px; white-space: nowrap; }
 .lp-gps { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 1000; display: inline-flex; gap: 8px; align-items: center; height: 40px; padding: 0 16px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--accent); font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.1); white-space: nowrap; }
 .lp-card { background: var(--card); border-top: 1px solid var(--line); padding: 16px; border-radius: 18px 18px 0 0; margin-top: -14px; z-index: 1001; position: relative; max-width: 640px; width: 100%; margin-left: auto; margin-right: auto; }
+
+/* ---------- complaint form ---------- */
+.voice-cta { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border-radius: var(--radius); border: 1.5px solid #b9d7dc; background: var(--accent-soft); cursor: pointer; }
+.voice-cta b { font-size: 17px; }
+.req { color: var(--red); }
+.loc-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+.loc-row.empty { color: var(--accent); font-weight: 560; border-style: dashed; border-color: #9cc7cf; background: #f7fbfc; }
+.type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.type-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: 12.5px; text-align: center; line-height: 1.2; color: var(--ink-2); min-width: 0; }
+.type-btn.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.check input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.need { border-color: var(--red) !important; box-shadow: 0 0 0 3px var(--red-soft) !important; }
+.status-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.status-tile { border-radius: 12px; padding: 12px; text-align: center; border: 1.5px solid; cursor: pointer; background: #fff; }
+.status-tile b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.status-tile span { font-size: 13.5px; font-weight: 560; }
+.status-tile.s-reg { border-color: #e9c98f; } .status-tile.s-prog { border-color: #a9c3e6; } .status-tile.s-done { border-color: #9fd0b4; } .status-tile.s-inv { border-color: #cfd3d1; }
+.status-tile.on { outline: 2.5px solid var(--ink); outline-offset: 1px; }

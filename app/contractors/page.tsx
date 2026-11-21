@@ -43,7 +43,7 @@ export default async function Contractors() {
                   <div className="small ink2">
                     <span className={broke >= 3 ? "red bold" : ""}>{broke} of 10</span> repairs break again within a month · {ontime} of 10 on time
                   </div>
-                  {money > 0 && <div className="tiny muted" style={{ marginTop: 2 }}><Ico name="rupee" size={12} /> {inrShort(money)} in bills to question</div>}
+                  {money > 0 && <div className="tiny muted" style={{ marginTop: 2 }}>{inrShort(money)} in bills to question</div>}
                   <div className="mini"><i style={{ width: `${g.score}%`, background: TONE_COLOR[g.tone] }} /></div>
                 </div>
                 <Ico name="chevron" size={18} className="muted" />
