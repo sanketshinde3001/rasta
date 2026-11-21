@@ -113,7 +113,7 @@ export function BudgetPlanner({ ward, wardName, rows, defaultFunds, budget, spen
               </button>
             ))}
           </div>
-          <p className="small ink2"><Ico name="info" size={14} /> {SEASONS[season].hint}</p>
+          <p className="tiny muted">{SEASONS[season].hint}</p>
         </div>
       </div>
 
@@ -129,14 +129,12 @@ export function BudgetPlanner({ ward, wardName, rows, defaultFunds, budget, spen
           <div className="row"><Ico name="sparkles" size={18} className="green" /><h2>Note for the ward committee</h2></div>
           <button className="btn sm" disabled={briefBusy} onClick={explain}>{briefBusy ? <span className="spin" /> : brief ? "Rewrite" : "Write with AI"}</button>
         </div>
-        {brief?.headline ? (
+        {brief?.headline && (
           <div className="stack small">
             <p className="bold">{brief.headline}</p>
             <ul style={{ margin: 0, paddingLeft: 18 }}>{brief.points.map((p: string, i: number) => <li key={i} style={{ marginBottom: 4 }}>{p}</li>)}</ul>
             <p className="ink2"><b>If we stop here:</b> {brief.risk}</p>
           </div>
-        ) : (
-          <p className="small muted">One click turns this plan into a short note for the corporator.</p>
         )}
         {brief?.error && <div className="banner warn small">{brief.error}</div>}
       </div>

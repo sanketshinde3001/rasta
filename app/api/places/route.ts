@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/data";
+import { searchPlaces } from "@/lib/geocode";
 
 // Offline place search over the city's localities, roads, hospitals and schools.
 export async function GET(req: Request) {
@@ -24,6 +25,9 @@ export async function GET(req: Request) {
   for (const f of ctx.facilities) {
     const n = String(f.name).replace(" (synthetic)", "");
     if (n.toLowerCase().includes(q)) out.push({ name: n, sub: `${f.type} · Ward ${f.ward_code}`, lat: f.lat, lon: f.lon, kind: f.type === "Hospital" ? "hospital" : "school" });
+  }
+  if (out.length < 5) {
+    for (const p of await searchPlaces(q)) if (!out.some((o) => Math.abs(o.lat - p.lat) < 0.0005 && Math.abs(o.lon - p.lon) < 0.0005)) out.push(p);
   }
   return NextResponse.json({ results: out.slice(0, 8) });
 }

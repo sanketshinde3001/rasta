@@ -30,7 +30,7 @@ export async function TopBar({ session, active, wide }: { session: Session | nul
       <div className="topbar-in" style={{ maxWidth: wide || session?.role === "officer" ? 1120 : 900 }}>
         <Link href={session ? (session.role === "officer" ? "/officer" : "/citizen") : "/"} className="brand" style={{ flex: "none" }}>
           <span className="brand-mark"><Ico name="road" size={18} stroke={2.2} /></span>
-          Rasta
+          <span className="brand-word">Rasta</span>
         </Link>
         <nav className="topnav">
           {nav.map((n) => (
@@ -43,7 +43,6 @@ export async function TopBar({ session, active, wide }: { session: Session | nul
         <LangSwitch />
         {session ? (
           <div className="who">
-            <span className="hide-sm">{session.role === "officer" ? t("ward.office", { w: session.ward }) : session.name}</span>
             <span className="avatar">{initials}</span>
             <Logout />
           </div>

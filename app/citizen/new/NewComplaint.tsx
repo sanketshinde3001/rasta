@@ -5,6 +5,7 @@ import { Ico } from "@/components/Ico";
 import { LocationPicker, type Loc } from "@/components/LocationPicker";
 import { CATEGORIES, SAMPLES, SUB_TO_CAT, fmtDate, photoOf } from "@/lib/taxonomy";
 import { VoiceSheet } from "./VoiceSheet";
+import { bestFix } from "@/lib/gps";
 import { useT, useLang } from "@/components/I18n";
 
 type Similar = { source?: string; complaint_id: string; category_reported: string; description: string; status: string; received_at: string; road_name: string | null; locality_text: string | null; photo: string | null; supporters: number; distance_m: number };
@@ -32,7 +33,10 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
   const t = useT();
   const uiLang = useLang();
   const [loc, setLoc] = useState<Loc | null>(null);
-  const [locSource, setLocSource] = useState("device");
+  const [locSource, setLocSource] = useState("");
+  const [acc, setAcc] = useState<number | null>(null);
+  const locSourceRef = useRef("");
+  locSourceRef.current = locSource;
   const [picker, setPicker] = useState<{ lat: number; lon: number } | null | false>(false);
   const [gpsState, setGpsState] = useState<"asking" | "ok" | "denied">("asking");
   const [preview, setPreview] = useState<string | null>(null);
@@ -69,11 +73,26 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
       return;
     }
     if (!navigator.geolocation) return setGpsState("denied");
-    navigator.geolocation.getCurrentPosition(
-      (p) => locateAt(p.coords.latitude, p.coords.longitude).then((l) => { setLoc(l); setLocSource("device"); setGpsState("ok"); }),
-      () => setGpsState("denied"),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
+    const mine = () => locSourceRef.current === "" || locSourceRef.current === "device"; // don't override a photo tag or a map pin
+    let last = 0;
+    const apply = (f: { lat: number; lon: number; acc: number }) =>
+      locateAt(f.lat, f.lon).then((l) => {
+        if (!mine()) return;
+        setLoc(l);
+        setLocSource("device");
+        setGpsState("ok");
+      });
+    bestFix((f) => {
+      setAcc(f.acc);
+      if (Date.now() - last > 1500) {
+        last = Date.now();
+        apply(f);
+      }
+    }).then((f) => {
+      if (!f) return setGpsState((g) => (g === "ok" ? g : "denied"));
+      setAcc(f.acc);
+      apply(f);
+    });
   }, [prefill]);
 
   async function analyze(dataUrl: string) {
@@ -178,7 +197,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
     const r = await fetch("/api/complaints", {
       method: "POST",
       body: JSON.stringify({
-        lat: loc!.lat, lon: loc!.lon, subcategory: sub, description: desc.trim() || ai?.description || sub, landmark, photo, ai, language,
+        lat: loc!.lat, lon: loc!.lon, road_name: loc!.road_name, locality: loc!.locality, subcategory: sub, description: desc.trim() || ai?.description || sub, landmark, photo, ai, language,
         location_source: locSource, similar_to: opts.force ? similar?.[0]?.complaint_id : prefill?.renew_of || null,
         override_reason: opts.force ? reason : prefill ? `Renewed: earlier complaint #${prefill.renew_of} was closed but the problem is back.` : "",
         anonymous: anon, notify_phone: !anon && usePhone, notify_email: !anon && useEmail ? email : "",
@@ -229,7 +248,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
               <Ico name="pin" size={20} className="green" />
               <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
                 <b className="ellipsis" style={{ display: "block" }}>{loc.road_name || loc.locality || "Pinned spot"}</b>
-                <span className="tiny muted">{landmark ? `${landmark} · ` : ""}{locSource === "photo" ? "from photo's location tag" : locSource === "device" ? "your current location" : "set on map"}</span>
+                <span className="tiny muted">{loc.address ? `${loc.address} · ` : ""}{landmark ? `${landmark} · ` : ""}{locSource === "photo" ? "from photo's location tag" : locSource === "device" ? `your location${acc ? ` (±${acc} m)` : ""}` : "set on map"}</span>
               </span>
               <span className="linkbtn small">{t("f.change")}</span>
             </button>
@@ -241,6 +260,14 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
             </button>
           )}
         </div>
+
+        {loc && locSource === "device" && acc != null && acc > 60 && (
+          <div className="banner warn small">
+            <Ico name="nav" size={18} />
+            <div style={{ flex: 1 }}>Your phone&apos;s location is approximate (±{acc} m). Drag the pin to the exact spot.</div>
+            <button className="btn sm" onClick={() => setPicker({ lat: loc.lat, lon: loc.lon })}>Adjust</button>
+          </div>
+        )}
 
         <div className="grid2">
           <div>

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { allComplaints } from "@/lib/store";
+import { allComplaints , hydrate } from "@/lib/store";
 import { bucketOf } from "@/lib/taxonomy";
 
 export async function GET(_: Request, { params }: { params: Promise<{ code: string }> }) {
+  await hydrate();
   const code = decodeURIComponent((await params).code);
   const pts = allComplaints()
     .filter((c) => c.ward_code === code && c.lat && c.lon)

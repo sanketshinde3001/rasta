@@ -31,7 +31,7 @@ export default async function Clawback() {
         <div>
           <p className="muted small">Ward {s.ward} · {w.ward_name}</p>
           <h1 style={{ marginTop: 2 }}>{t("cb.title")}</h1>
-          <p className="ink2" style={{ marginTop: 6, maxWidth: 760 }}>{t("cb.sub")}</p>
+
         </div>
 
         <div className="cb-hero">

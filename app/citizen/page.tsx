@@ -20,7 +20,7 @@ export default async function CitizenHome() {
       <TopBar session={s} active="/citizen" />
       <main className="wrap stack-lg">
         <div>
-          <p className="muted small">{t("home.hi", { n: s.name.split(" ")[0] })} · {s.area}</p>
+          <p className="muted small">{t("home.hi", { n: s.name.split(" ")[0] })}</p>
           <h1 style={{ marginTop: 4 }}>{t("home.title")}</h1>
         </div>
 

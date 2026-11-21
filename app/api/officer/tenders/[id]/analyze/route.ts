@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { getTender, updateTender } from "@/lib/store";
+import { getTender, updateTender, flush } from "@/lib/store";
 import { analyzeBids } from "@/lib/ai";
 import { bidFacts, offlineBidAnalysis } from "@/lib/tenders";
 
@@ -18,5 +18,6 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     a = offlineBidAnalysis(t);
   }
   updateTender(t.tender_id, { analysis: a });
+  await flush();
   return NextResponse.json(a);
 }

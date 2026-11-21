@@ -1,17 +1,19 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Ico";
+import { useLang } from "@/components/I18n";
 
 const LANGS = [
-  { code: "en-IN", label: "English" },
-  { code: "hi-IN", label: "हिंदी" },
-  { code: "mr-IN", label: "मराठी" },
+  { code: "en-IN", label: "English / Hinglish", dg: "en" },
+  { code: "hi-IN", label: "हिंदी", dg: "hi" },
+  { code: "mr-IN", label: "मराठी", dg: null }, // Deepgram has no Marathi model: use the browser's recogniser
 ];
 const SAMPLE = "Kurla station ke bahar LBS Marg pe bahut bada khadda hai, kal raat ek bike wala gir gaya. Bus stop ke saamne hai, please jaldi theek karo.";
 
 // Voice complaint: Deepgram if the server has a key, otherwise the browser's speech recognition.
 export function VoiceSheet({ onClose, onResult }: { onClose: () => void; onResult: (r: any, transcript: string) => void }) {
-  const [lang, setLang] = useState("hi-IN");
+  const ui = useLang();
+  const [lang, setLang] = useState(ui === "mr" ? "mr-IN" : ui === "hi" ? "hi-IN" : "en-IN");
   const [state, setState] = useState<"idle" | "rec" | "busy" | "done">("idle");
   const [text, setText] = useState("");
   const [err, setErr] = useState("");
@@ -28,22 +30,24 @@ export function VoiceSheet({ onClose, onResult }: { onClose: () => void; onResul
   async function start() {
     setErr("");
     setText("");
-    if (deepgram) {
+    const dg = LANGS.find((l) => l.code === lang)?.dg;
+    if (deepgram && dg) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mr = new MediaRecorder(stream);
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+        const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((m) => MediaRecorder.isTypeSupported?.(m));
+        const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
         chunks.current = [];
         mr.ondataavailable = (e) => chunks.current.push(e.data);
         mr.onstop = async () => {
           stream.getTracks().forEach((t) => t.stop());
           setState("busy");
           const blob = new Blob(chunks.current, { type: mr.mimeType || "audio/webm" });
-          const r = await fetch("/api/transcribe", { method: "POST", headers: { "content-type": blob.type }, body: blob }).then((r) => r.json());
+          const r = await fetch(`/api/transcribe?lang=${dg}`, { method: "POST", headers: { "content-type": blob.type }, body: blob }).then((r) => r.json());
           setText(r.transcript || "");
           if (!r.transcript) setErr(r.error || "We didn't catch that. Try again or type below.");
           setState("done");
         };
-        mr.start();
+        mr.start(250);
         media.current = mr;
         setState("rec");
       } catch {
@@ -83,7 +87,7 @@ export function VoiceSheet({ onClose, onResult }: { onClose: () => void; onResul
   function stop() {
     if (media.current?.state === "recording") media.current.stop();
     rec.current?.stop();
-    if (!deepgram) setState("done");
+    if (!(deepgram && LANGS.find((l) => l.code === lang)?.dg)) setState("done");
   }
 
   async function use() {
@@ -105,7 +109,7 @@ export function VoiceSheet({ onClose, onResult }: { onClose: () => void; onResul
           <button className="btn ghost sm" onClick={onClose}><Ico name="x" /></button>
         </div>
         <p className="small ink2">Speak in any language. AI fills the form for you.</p>
-        {!deepgram && (
+        {true && (
           <div className="seg">
             {LANGS.map((l) => <button key={l.code} className={lang === l.code ? "on" : ""} onClick={() => setLang(l.code)}>{l.label}</button>)}
           </div>

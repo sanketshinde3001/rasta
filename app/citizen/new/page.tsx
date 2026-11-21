@@ -18,7 +18,7 @@ export default async function NewPage({ searchParams }: { searchParams: Promise<
       <main className="wrap">
         <Link href="/citizen" className="back"><Ico name="back" size={18} /> Home</Link>
         <h1 style={{ marginBottom: 6 }}>{prefill ? "Renew complaint" : t("f.title")}</h1>
-        <p className="ink2" style={{ marginBottom: 22 }}>{prefill ? `The problem from #${prefill.renew_of} is back? Add a fresh photo and submit.` : t("f.sub")}</p>
+        {prefill ? <p className="ink2" style={{ marginBottom: 22 }}>{`The problem from #${prefill.renew_of} is back? Add a fresh photo and submit.`}</p> : <div style={{ height: 14 }} />}
         <NewComplaint phone={s.phone} prefill={prefill} />
       </main>
     </>

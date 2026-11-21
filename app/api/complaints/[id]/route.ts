@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { getComplaint } from "@/lib/store";
+import { getComplaint , hydrate } from "@/lib/store";
 import { jobFor, FLAG_TEXT } from "@/lib/views";
 import { bucketOf, photoOf } from "@/lib/taxonomy";
 import { db } from "@/lib/data";
 import { gradeOf } from "@/app/contractors/grade";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  await hydrate();
   const c = getComplaint(decodeURIComponent((await params).id));
   if (!c) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const j = jobFor(c);

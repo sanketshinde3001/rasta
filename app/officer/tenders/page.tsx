@@ -17,7 +17,6 @@ export default async function Tenders() {
         <div>
           <p className="muted small">Ward {s.ward}</p>
           <h1 style={{ marginTop: 2 }}>Tenders</h1>
-          <p className="ink2" style={{ marginTop: 6 }}>Open a tender from the smart budget. Bids come in, AI compares them on price and track record, and you award.</p>
         </div>
         {list.length ? (
           <div className="card" style={{ padding: "4px 16px" }}>

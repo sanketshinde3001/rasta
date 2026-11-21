@@ -94,17 +94,19 @@ The logins are demos and details are pre-filled. For the officer, choose **Ward 
 |---|---|---|
 | `ANTHROPIC_API_KEY` | recommended | Every AI feature |
 | `RASTA_MODEL` | no | Defaults to `claude-haiku-5-5` |
-| `DEEPGRAM_API_KEY` | no | Server-side speech-to-text; without it the browser's own speech recognition is used |
+| `DEEPGRAM_API_KEY` | no | Speech-to-text for English/Hinglish (nova-3 multi) and Hindi (nova-2). Marathi uses the browser's recogniser. Without a key, the browser handles all three |
+| `CLOUDINARY_URL` | **yes on Vercel** | `cloudinary://<api_key>:<api_secret>@<cloud_name>`. Shared storage for complaint photos and app state, so every serverless instance sees the same complaints |
 
 ## Deploy to Vercel
 
 1. Import this repo in Vercel. The framework (Next.js) is detected automatically.
-2. Add `ANTHROPIC_API_KEY` (and optionally `RASTA_MODEL` and `DEEPGRAM_API_KEY`) under **Settings → Environment Variables**.
+2. Under **Settings → Environment Variables** add `ANTHROPIC_API_KEY`, `CLOUDINARY_URL`, and optionally `RASTA_MODEL` and `DEEPGRAM_API_KEY`.
 3. Deploy.
 
 Things to know:
 - **The dataset ships with the repo.** It lives in `data/*.json` and is bundled through `outputFileTracingIncludes`, so no database is needed.
-- **New complaints and decisions don't last on Vercel.** New complaints, support, decisions, tenders and notices are written to a JSON file, which on Vercel lives in `/tmp`. It resets when the function goes cold. That's fine for a demo; a real deployment would use a database.
+- **Shared state lives in Cloudinary.** New complaints, support, decisions, tenders and notices are kept in one JSON file in Cloudinary (`rasta/state.json`), and photos in `rasta/photos/`. Every request reads the latest copy, so any serverless instance can serve any page. Without `CLOUDINARY_URL` the app uses a local file, which is fine on your laptop but not on Vercel. A real deployment would use a database.
+- **Location:** GPS is watched for up to 12 seconds and the most accurate fix is kept; accuracy is shown as ±metres. Addresses and place search come from OpenStreetMap Nominatim.
 - **AI calls take up to 30 seconds.** AI routes set `maxDuration = 60`.
 
 ## Demo script (3 minutes)

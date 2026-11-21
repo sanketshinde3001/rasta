@@ -2,10 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Ico } from "./Ico";
 import { TILE_ATTR, TILE_URL } from "./PinMap";
+import { bestFix } from "@/lib/gps";
 
 export type Loc = {
   lat: number; lon: number; ward_code: string | null; ward_name: string | null; road_name: string | null;
-  locality: string | null; inside_bmc: boolean; road_type: string | null;
+  locality: string | null; inside_bmc: boolean; road_type: string | null; address?: string | null; landmark_hint?: string | null;
 };
 
 const KURLA = { lat: 19.0726, lon: 72.8845 };
@@ -23,6 +24,9 @@ export function LocationPicker({ start, onConfirm, onClose }: { start: { lat: nu
   const [q, setQ] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [gps, setGps] = useState<"idle" | "busy" | "denied">("idle");
+  const [acc, setAcc] = useState<number | null>(null);
+  const circle = useRef<any>(null);
+  const Lref = useRef<any>(null);
   const [landmark, setLandmark] = useState("");
   const timer = useRef<any>(null);
 
@@ -30,6 +34,7 @@ export function LocationPicker({ start, onConfirm, onClose }: { start: { lat: nu
     let alive = true;
     import("leaflet").then((L) => {
       if (!alive || !el.current || map.current) return;
+      Lref.current = L;
       const c = start || KURLA;
       map.current = L.map(el.current, { zoomControl: false }).setView([c.lat, c.lon], 17);
       L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map.current);
@@ -38,7 +43,7 @@ export function LocationPicker({ start, onConfirm, onClose }: { start: { lat: nu
         setMoving(false);
         const p = map.current.getCenter();
         clearTimeout(timer.current);
-        timer.current = setTimeout(() => locate(p.lat, p.lng).then(setLoc), 150);
+        timer.current = setTimeout(() => locate(p.lat, p.lng).then(setLoc), 500);
       });
       locate(c.lat, c.lon).then(setLoc);
       if (!start) useGps();
@@ -60,14 +65,17 @@ export function LocationPicker({ start, onConfirm, onClose }: { start: { lat: nu
   function useGps() {
     if (!navigator.geolocation) return setGps("denied");
     setGps("busy");
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        setGps("idle");
-        map.current?.flyTo([p.coords.latitude, p.coords.longitude], 18, { duration: 0.8 });
-      },
-      () => setGps("denied"),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
+    let first = true;
+    const show = (f: { lat: number; lon: number; acc: number }) => {
+      setAcc(f.acc);
+      if (!map.current || !Lref.current) return;
+      circle.current?.remove();
+      circle.current = Lref.current.circle([f.lat, f.lon], { radius: f.acc, color: "#2560a8", weight: 1, fillOpacity: 0.08 }).addTo(map.current);
+      if (first) map.current.flyTo([f.lat, f.lon], f.acc < 60 ? 18 : 16, { duration: 0.8 });
+      else map.current.panTo([f.lat, f.lon]);
+      first = false;
+    };
+    bestFix(show).then((f) => setGps(f ? "idle" : "denied"));
   }
 
   function pick(r: any) {
@@ -105,7 +113,7 @@ export function LocationPicker({ start, onConfirm, onClose }: { start: { lat: nu
         </div>
         <div className="lp-hint">{moving ? "Release to set" : "Move the map to place the pin on the problem"}</div>
         <button className="lp-gps" onClick={useGps}>
-          {gps === "busy" ? <span className="spin" /> : <Ico name="nav" size={18} />} Use current location
+          {gps === "busy" ? <><span className="spin" /> Finding precise location…</> : <><Ico name="nav" size={18} /> Use current location</>}
         </button>
       </div>
       <div className="lp-card">
@@ -115,8 +123,9 @@ export function LocationPicker({ start, onConfirm, onClose }: { start: { lat: nu
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="bold ellipsis">{title}</div>
             <div className="small ink2">
-              {loc ? (loc.ward_code ? `${loc.locality ? loc.locality + " · " : ""}Ward ${loc.ward_code}, ${loc.ward_name}` : "Outside BMC limits") : "Finding address…"}
+              {loc ? (loc.ward_code ? `${loc.address || loc.locality || ""}${loc.address || loc.locality ? " · " : ""}Ward ${loc.ward_code}, ${loc.ward_name}` : "Outside BMC limits") : "Finding address…"}
             </div>
+            {acc != null && <div className="tiny muted">GPS accuracy ±{acc} m{acc > 60 ? " · drag the map to the exact spot" : ""}</div>}
           </div>
         </div>
         <input className="input" style={{ marginTop: 12 }} value={landmark} onChange={(e) => setLandmark(e.target.value)} placeholder="Landmark (optional), e.g. opposite bus depot" />

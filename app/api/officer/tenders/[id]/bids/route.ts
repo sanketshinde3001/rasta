@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { getTender, updateTender } from "@/lib/store";
+import { getTender, updateTender, flush } from "@/lib/store";
 import { nowStamp } from "@/lib/taxonomy";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,5 +17,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     submitted_at: nowStamp(),
   };
   updateTender(t.tender_id, { bids: [...t.bids, bid], analysis: null });
+  await flush();
   return NextResponse.json({ ok: true });
 }

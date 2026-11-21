@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { getComplaint, patchComplaint } from "@/lib/store";
+import { getComplaint, patchComplaint, flush } from "@/lib/store";
 import { nowStamp } from "@/lib/taxonomy";
 
 const ACTIONS: Record<string, { status: string; text: string }> = {
@@ -27,5 +27,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     decision: { action, note: note?.trim() || a.text, at: now, by: `${s.name}, ${s.title}` },
     history: [...(c.history || [{ at: c.received_at, text: "Complaint registered" }]), { at: now, text }],
   });
+  await flush();
   return NextResponse.json({ ok: true });
 }

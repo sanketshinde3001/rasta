@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { db, type Complaint } from "./data";
+import { cloudOn, cloudReadJson, cloudWriteJson } from "./cloud";
 
 // Runtime state on top of the read-only dataset: new complaints, status changes, supporters, tenders.
 // A JSON file is enough for a prototype. On read-only hosts it falls back to the temp dir.
@@ -43,18 +44,49 @@ export function photoDir() {
   return d;
 }
 
+// Where the state lives: Cloudinary (shared across serverless instances) when CLOUDINARY_URL is set, else a local file.
+// Every request calls hydrate() first; every change is written straight away and routes await flush() before replying.
+const EMPTY = (): State => ({ seq: 0, created: [], patches: {}, tenders: [] });
 let state: State | null = null;
-function load(): State {
-  if (state) return state;
+let pending: Promise<void> = Promise.resolve();
+
+export async function hydrate() {
+  await pending;
+  if (cloudOn()) {
+    try {
+      state = (await cloudReadJson("rasta/state.json")) || EMPTY();
+    } catch (e) {
+      console.error("cloud read failed", e);
+      state = state || EMPTY();
+    }
+    return;
+  }
   try {
     state = JSON.parse(fs.readFileSync(file(), "utf8"));
   } catch {
-    state = { seq: 0, created: [], patches: {}, tenders: [] };
+    state = EMPTY();
+  }
+}
+function load(): State {
+  if (!state) {
+    try {
+      state = cloudOn() ? EMPTY() : JSON.parse(fs.readFileSync(file(), "utf8"));
+    } catch {
+      state = EMPTY();
+    }
   }
   return state!;
 }
 function save() {
-  fs.writeFileSync(file(), JSON.stringify(state));
+  const snapshot = JSON.stringify(state);
+  if (cloudOn()) {
+    pending = pending.then(() => cloudWriteJson("rasta/state.json", snapshot)).catch((e) => console.error("cloud write failed", e));
+  } else {
+    fs.writeFileSync(file(), snapshot);
+  }
+}
+export async function flush() {
+  await pending;
 }
 
 export const DEMO_CITIZEN = { id: "CIT-DEMO", name: "Priya Kulkarni", phone: "98200 12345", ward: "L", area: "Kurla West" };

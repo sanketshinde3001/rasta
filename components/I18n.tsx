@@ -15,20 +15,37 @@ export const useT = () => tr(useContext(Ctx));
 export function LangSwitch() {
   const lang = useLang();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const cur = LANGS.find((l) => l.code === lang)!;
   return (
-    <div className="seg lang-seg" title="Language / भाषा">
-      {LANGS.map((l) => (
-        <button
-          key={l.code}
-          className={lang === l.code ? "on" : ""}
-          onClick={() => {
-            document.cookie = `rasta_lang=${l.code}; path=/; max-age=31536000`;
-            router.refresh();
-          }}
-        >
-          {l.short}
-        </button>
-      ))}
+    <div className="lang-dd">
+      <button className="lang-btn" onClick={() => setOpen(!open)} aria-label="Language / भाषा" aria-expanded={open}>
+        <Ico name="globe" size={18} />
+        <span>{cur.short}</span>
+        <span className="lang-caret"><Ico name="down" size={14} /></span>
+      </button>
+      {open && (
+        <>
+          <div className="lang-scrim" onClick={() => setOpen(false)} />
+          <div className="lang-menu" role="menu">
+            {LANGS.map((l) => (
+              <button
+                key={l.code}
+                role="menuitem"
+                className={lang === l.code ? "on" : ""}
+                onClick={() => {
+                  document.cookie = `rasta_lang=${l.code}; path=/; max-age=31536000`;
+                  setOpen(false);
+                  router.refresh();
+                }}
+              >
+                <span>{l.label}</span>
+                {lang === l.code && <Ico name="check" size={16} />}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -22,9 +22,6 @@ export default async function Budget() {
         <div>
           <p className="muted small">Ward {s.ward} · {w.ward_name}</p>
           <h1 style={{ marginTop: 2 }}>Smart budget</h1>
-          <p className="ink2" style={{ marginTop: 6, maxWidth: 720 }}>
-            Every open problem in the ward, ranked by risk to people. Each gets the repair method that lasts longest here. Roads still under guarantee go back to their contractor for free.
-          </p>
         </div>
         <BudgetPlanner ward={s.ward} wardName={w.ward_name} rows={rows} defaultFunds={defaultFunds} budget={w.monsoon_repair_budget_inr_2025} spent={w.spend_inr} initialSeason={currentSeason()} tendered={tendered} />
       </main>

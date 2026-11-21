@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { roadFacts } from "@/lib/kundli";
 import { roadVerdict } from "@/lib/ai";
 import { getLang } from "@/lib/serverLang";
-import { getVerdict, setVerdict } from "@/lib/store";
+import { getVerdict, setVerdict, hydrate, flush } from "@/lib/store";
 
 export const maxDuration = 60;
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  await hydrate();
   const id = (await params).id;
   const lang = await getLang();
   const k = `${id}|${lang}`;
@@ -16,7 +17,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   if (!f) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
     const text = await roadVerdict(f.summary, lang);
-    if (text) setVerdict(k, text);
+    if (text) {
+      setVerdict(k, text);
+      await flush();
+    }
     return NextResponse.json({ text });
   } catch {
     return NextResponse.json({ text: "" });

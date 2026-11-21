@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { getLang } from "@/lib/serverLang";
 import { clawByContractor } from "@/lib/clawback";
-import { clawState, markInspection, setClawState } from "@/lib/store";
+import { clawState, markInspection, setClawState, flush } from "@/lib/store";
 import { recoveryNotice } from "@/lib/ai";
 import { inr, nowStamp } from "@/lib/taxonomy";
 
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
   const now = nowStamp();
   if (b.action === "inspect") {
     markInspection(b.road_id, now);
+    await flush();
     return NextResponse.json({ ok: true, at: now });
   }
   const group = clawByContractor(s.ward).find((g) => g.contractor_id === b.contractor_id);
@@ -30,10 +31,10 @@ export async function POST(req: Request) {
   if (b.action === "toggle") {
     const ex = new Set(st.excluded);
     b.include ? ex.delete(b.wo) : ex.add(b.wo);
-    return NextResponse.json(setClawState(key, { excluded: [...ex], notice: undefined, reviewed_at: undefined }));
+    { const out = setClawState(key, { excluded: [...ex], notice: undefined, reviewed_at: undefined }); await flush(); return NextResponse.json(out); }
   }
-  if (b.action === "review") return NextResponse.json(setClawState(key, { reviewed_at: now, by: s.name }));
-  if (b.action === "sent") return NextResponse.json(setClawState(key, { sent_at: now }));
+  if (b.action === "review") { const out = setClawState(key, { reviewed_at: now, by: s.name }); await flush(); return NextResponse.json(out); }
+  if (b.action === "sent") { const out = setClawState(key, { sent_at: now }); await flush(); return NextResponse.json(out); }
   if (b.action === "notice") {
     if (!st.reviewed_at) return NextResponse.json({ error: "Review the items first." }, { status: 400 });
     const items = group.items.filter((i) => !st.excluded.includes(i.wo));
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     };
     try {
       const text = await recoveryNotice(facts, lang);
-      return NextResponse.json(setClawState(key, { notice: { lang, text, at: now } }));
+      { const out = setClawState(key, { notice: { lang, text, at: now } }); await flush(); return NextResponse.json(out); }
     } catch {
       return NextResponse.json({ error: "Could not draft the notice. Try again." }, { status: 502 });
     }

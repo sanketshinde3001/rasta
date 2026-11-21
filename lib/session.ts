@@ -1,13 +1,14 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { DEMO_CITIZEN } from "./store";
+import { DEMO_CITIZEN, hydrate } from "./store";
 
 export type Session =
   | { role: "citizen"; id: string; name: string; ward: string; area: string; phone: string }
   | { role: "officer"; id: string; name: string; ward: string; title: string };
 
 export async function getSession(): Promise<Session | null> {
+  await hydrate(); // fresh shared state for this request
   const raw = (await cookies()).get("rasta_session")?.value;
   if (!raw) return null;
   try {

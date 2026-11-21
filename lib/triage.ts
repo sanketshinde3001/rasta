@@ -1,6 +1,6 @@
 import "server-only";
 import { db, type Complaint } from "./data";
-import { getComplaint, patchComplaint, allComplaints } from "./store";
+import { getComplaint, patchComplaint, allComplaints, flush } from "./store";
 import { triage } from "./ai";
 import { loadPhoto } from "./photos";
 import { priorityOf } from "./priority";
@@ -39,8 +39,9 @@ export async function runTriage(id: string, force = false) {
       past_repairs_on_road: past.map((w) => ({ id: w.work_order_id, method: w.repair_method, completed: w.completed_at, failed_within_30d: w.reopened_within_30d })),
       supporters: (c.upvotes || 0) + (c.supporters?.length || 0),
     };
-    const t = await triage(facts, loadPhoto(c.photo) || undefined);
+    const t = await triage(facts, (await loadPhoto(c.photo)) || undefined);
     patchComplaint(id, { triage: t });
+    await flush();
     return t;
   } catch (e) {
     console.error("triage failed", id, e);

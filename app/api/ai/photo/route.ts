@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const { image, hint } = await req.json();
   let saved;
   try {
-    saved = savePhoto(image);
+    saved = await savePhoto(image);
   } catch {
     return NextResponse.json({ error: "Please upload a JPG or PNG photo." }, { status: 400 });
   }

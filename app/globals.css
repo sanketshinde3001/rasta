@@ -337,3 +337,16 @@ body:has(.lp) .topbar { z-index: 0; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .warranty-on { border-color: #cfe6d9; }
+.lang-dd { position: relative; }
+.lang-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.lang-scrim { position: fixed; inset: 0; z-index: 1500; }
+.lang-menu { position: absolute; right: 0; top: 42px; z-index: 1600; min-width: 170px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.1); padding: 6px; }
+.lang-menu button { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px 12px; border: none; background: none; border-radius: 8px; cursor: pointer; font-size: 15px; text-align: left; }
+.lang-menu button:hover { background: var(--line-2); }
+.lang-menu button.on { color: var(--accent); font-weight: 600; }
+@media (max-width: 430px) {
+  .brand-word { display: none; }
+  .lang-btn { padding: 0 7px; gap: 4px; }
+  .lang-btn .lang-caret { display: none; }
+  .topnav a { padding: 7px 7px; }
+}

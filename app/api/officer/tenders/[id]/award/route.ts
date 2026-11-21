@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { getComplaint, getTender, patchComplaint, updateTender } from "@/lib/store";
+import { getComplaint, getTender, patchComplaint, updateTender, flush } from "@/lib/store";
 import { nowStamp } from "@/lib/taxonomy";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -21,5 +21,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       history: [...(c.history || [{ at: c.received_at, text: "Complaint registered" }]), { at: now, text: `Repair awarded to ${bid.bidder} (tender ${t.tender_id}), to finish in ${bid.days} days.` }],
     });
   }
+  await flush();
   return NextResponse.json({ ok: true });
 }
