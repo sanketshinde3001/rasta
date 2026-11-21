@@ -8,7 +8,7 @@ import { fmtDate, inr, inrShort } from "@/lib/taxonomy";
 type WardStat = {
   ward_code: string; ward_name: string; complaints_open: number; complaints: number; budget_used_pct: number;
   flagged_inr_dedup: number; spend_inr: number; monsoon_repair_budget_inr_2025: number; reopen_pct: number;
-  sla_met_pct: number; failed_30d_spend_inr: number; top_contractor: string;
+  sla_met_pct: number; failed_30d_spend_inr: number; top_contractor: string; remaining_budget_inr: number;
 };
 type Pt = { id: string; lat: number; lon: number; b: string; sub: string; at: string; road: string | null; wo: boolean; app: boolean };
 
@@ -22,6 +22,7 @@ const FILTERS = [
 const METRICS = {
   open: { label: "Open complaints", get: (w: WardStat) => w.complaints_open, fmt: (v: number) => `${v} open` },
   money: { label: "Money to check", get: (w: WardStat) => w.flagged_inr_dedup, fmt: (v: number) => inrShort(v) },
+  budget: { label: "Budget used", get: (w: WardStat) => w.budget_used_pct, fmt: (v: number) => `${Math.round(v)}% used` },
 };
 
 export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedIn }: { wards: WardStat[]; geo: any; initialWard?: string; initialComplaint?: string; loggedIn: boolean }) {
@@ -33,7 +34,7 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
   const [ward, setWard] = useState<string | null>(null);
   const [points, setPoints] = useState<Pt[]>([]);
   const [filter, setFilter] = useState("open");
-  const [metric, setMetric] = useState<"open" | "money">("open");
+  const [metric, setMetric] = useState<"open" | "money" | "budget">("open");
   const [sel, setSel] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,7 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
   const max = Math.max(...wards.map((w) => METRICS[metric].get(w)));
   const shade = (v: number) => {
     const t = Math.sqrt(v / (max || 1));
+    if (metric === "budget") return v > 100 ? `rgba(192,57,43,${Math.min(0.65, 0.2 + (v - 100) / 60).toFixed(2)})` : `rgba(34,119,74,${(0.12 + (v / 100) * 0.35).toFixed(2)})`;
     return `rgba(${metric === "money" ? "192,57,43" : "14,104,120"},${(0.08 + t * 0.55).toFixed(2)})`;
   };
 
@@ -165,7 +167,7 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
               <p className="ink2 small" style={{ marginTop: 4 }}>Tap a ward to see every complaint, who repaired it, and what it cost.</p>
             </div>
             <div className="seg">
-              {(Object.keys(METRICS) as ("open" | "money")[]).map((k) => (
+              {(Object.keys(METRICS) as ("open" | "money" | "budget")[]).map((k) => (
                 <button key={k} className={metric === k ? "on" : ""} onClick={() => setMetric(k)}>{METRICS[k].label}</button>
               ))}
             </div>
@@ -174,11 +176,11 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
                 <button key={x.ward_code} className="crow" style={{ width: "100%", border: "none", background: "none", cursor: "pointer", textAlign: "left", padding: "10px 4px" }} onClick={() => openWard(x.ward_code)}>
                   <span className="score Low" style={{ width: 40, height: 34, fontSize: 13 }}>{x.ward_code}</span>
                   <span className="main"><span className="bold small ellipsis" style={{ display: "block" }}>{x.ward_name}</span></span>
-                  <span className={`small num bold ${metric === "money" ? "red" : ""}`}>{METRICS[metric].fmt(METRICS[metric].get(x))}</span>
+                  <span className={`small num bold ${metric === "money" || (metric === "budget" && x.budget_used_pct > 100) ? "red" : ""}`}>{METRICS[metric].fmt(METRICS[metric].get(x))}</span>
                 </button>
               ))}
             </div>
-            <p className="tiny muted">Darker = more {metric === "money" ? "money in bills that need checking" : "open complaints"}.</p>
+            <p className="tiny muted">{metric === "budget" ? "Green = within budget, red = overspent." : `Darker = more ${metric === "money" ? "money in bills that need checking" : "open complaints"}.`}</p>
           </div>
         )}
 
@@ -189,11 +191,22 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
               <p className="tiny muted">Ward {w.ward_code}</p>
               <h1 style={{ fontSize: 22 }}>{w.ward_name}</h1>
             </div>
-            <div className="grid2">
-              <div className="card flat tight stat"><b>{w.complaints_open}</b><span>complaints not fixed</span></div>
-              <div className="card flat tight stat"><b className={w.budget_used_pct > 100 ? "red" : ""}>{Math.round(w.budget_used_pct)}%</b><span>of repair budget used</span></div>
-              <div className="card flat tight stat"><b className="red">{inrShort(w.flagged_inr_dedup)}</b><span>in bills to check</span></div>
-              <div className="card flat tight stat"><b>{Math.round(w.reopen_pct)}%</b><span>repairs failed in 30 days</span></div>
+            <div className="card flat tight stack" style={{ gap: 10 }}>
+              <div className="between"><b className="small">Monsoon repair budget</b><span className={`pill ${w.budget_used_pct > 100 ? "p-High" : "s-done"}`}>{w.budget_used_pct > 100 ? "Overspent" : "Within budget"}</span></div>
+              <div className="budget-bar">
+                <i style={{ width: `${Math.min(100, (100 * w.spend_inr) / Math.max(w.spend_inr, w.monsoon_repair_budget_inr_2025))}%` }} />
+                {w.budget_used_pct > 100 && <span style={{ left: `${(100 * w.monsoon_repair_budget_inr_2025) / w.spend_inr}%` }} />}
+              </div>
+              <div className="grid3 small">
+                <div><div className="tiny muted">Allocated</div><b className="num">{inrShort(w.monsoon_repair_budget_inr_2025)}</b></div>
+                <div><div className="tiny muted">Spent</div><b className="num">{inrShort(w.spend_inr)}</b></div>
+                <div><div className="tiny muted">{w.remaining_budget_inr < 0 ? "Over by" : "Left"}</div><b className={`num ${w.remaining_budget_inr < 0 ? "red" : "green"}`}>{inrShort(Math.abs(w.remaining_budget_inr))}</b></div>
+              </div>
+            </div>
+            <div className="grid3">
+              <div className="card flat tight stat"><b>{w.complaints_open}</b><span>not fixed</span></div>
+              <div className="card flat tight stat"><b className="red">{inrShort(w.flagged_inr_dedup)}</b><span>bills to check</span></div>
+              <div className="card flat tight stat"><b>{Math.round(w.reopen_pct)}%</b><span>repairs failed</span></div>
             </div>
             <div className="chips">
               {FILTERS.map((f) => (
@@ -231,36 +244,45 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
               <div className="row muted"><span className="spin" /> Loading…</div>
             ) : (
               <>
-                {detail.photo && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={detail.photo} alt="" className="photo" style={{ height: 170 }} />
-                )}
-                <div className="between">
-                  <h2>{detail.sub}</h2>
-                  <span className={`pill ${{ Registered: "s-reg", "In progress": "s-prog", Closed: "s-done", Invalid: "s-inv" }[detail.bucket as string]}`}>{detail.bucket}</span>
+                <div className={`status-hero ${detail.bucket === "Closed" ? "done" : detail.bucket === "Invalid" ? "inv" : detail.bucket === "In progress" ? "prog" : "wait"}`}>
+                  <Ico name={detail.bucket === "Closed" ? "check" : detail.bucket === "Invalid" ? "x" : detail.bucket === "In progress" ? "hardhat" : "clock"} size={22} />
+                  <div>
+                    <b>{detail.bucket === "Closed" ? (detail.job ? `Fixed on ${fmtDate(detail.job.done)}` : "Closed") : detail.bucket === "Invalid" ? "Marked invalid" : detail.bucket === "In progress" ? "Being fixed" : `Waiting ${detail.days_open} days`}</b>
+                    <span>{detail.sub} · {detail.road}</span>
+                  </div>
                 </div>
-                <p className="small ink2">{detail.road} · {fmtDate(detail.at)} · {detail.supporters} supporters</p>
-                <p className="small" style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{detail.desc}</p>
+                <div className="grid2">
+                  <div>
+                    {detail.photo ? <img src={detail.photo} alt="" className="photo" style={{ height: 120 }} /> : <div className="photo" style={{ height: 120 }} />}
+                    <p className="tiny muted" style={{ marginTop: 4 }}>Reported {fmtDate(detail.at)}</p>
+                  </div>
+                  <div>
+                    {detail.job?.after ? <img src={detail.job.after} alt="" className="photo" style={{ height: 120 }} /> : <div className="photo" style={{ height: 120, display: "grid", placeItems: "center" }}><span className="tiny muted">No repair photo yet</span></div>}
+                    <p className="tiny muted" style={{ marginTop: 4 }}>{detail.job?.after ? "After repair (sample)" : "After"}</p>
+                  </div>
+                </div>
+                <p className="small ink2" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>“{detail.desc}”</p>
                 {detail.job ? (
-                  <div className="card flat tight stack" style={{ marginTop: 4 }}>
-                    <div className="row"><Ico name="hardhat" size={18} /><b className="small">{detail.job.contractor}</b></div>
-                    <div className="small ink2">{detail.job.method} · done {fmtDate(detail.job.done)}</div>
+                  <>
+                    <Link href={`/contractors/${detail.job.contractor_id}`} className="card flat tight row card-link">
+                      {detail.job.grade && <span className={`grade sm ${detail.job.grade.tone}`}>{detail.job.grade.letter}</span>}
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span className="tiny muted" style={{ display: "block" }}>Repaired by</span>
+                        <b className="small">{detail.job.contractor}</b>
+                        <span className="tiny ink2" style={{ display: "block" }}>See their scorecard</span>
+                      </span>
+                      <Ico name="chevron" size={18} className="muted" />
+                    </Link>
                     <div className="grid3 small">
                       <div><div className="muted tiny">Billed</div><b className={detail.job.cost > detail.job.fair * 1.3 ? "red num" : "num"}>{inr(detail.job.cost)}</b></div>
                       <div><div className="muted tiny">Fair price</div><b className="num">{inr(detail.job.fair)}</b></div>
-                      <div><div className="muted tiny">Held 30 days</div><b className={detail.job.held ? "green" : "red"}>{detail.job.held ? "Yes" : "No"}</b></div>
+                      <div><div className="muted tiny">Lasted a month?</div><b className={detail.job.held ? "green" : "red"}>{detail.job.held ? "Yes" : "No"}</b></div>
                     </div>
+                    {!detail.job.held && detail.job.rain7 > 150 && <p className="tiny muted"><Ico name="cloud" size={13} /> Heavy rain that week ({Math.round(detail.job.rain7)} mm), which partly explains it.</p>}
                     {detail.job.flags.map((f: string) => <div key={f} className="banner bad small" style={{ padding: "8px 10px" }}><Ico name="alert" size={16} /> {f}</div>)}
-                    {detail.job.after && (
-                      <div>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={detail.job.after} alt="" className="photo" style={{ height: 110 }} />
-                        <p className="tiny muted" style={{ marginTop: 4 }}>Contractor&apos;s completion photo (sample)</p>
-                      </div>
-                    )}
-                  </div>
+                  </>
                 ) : (
-                  <p className="small muted">No repair job linked yet.</p>
+                  <p className="small muted">{detail.status_note || "No repair job linked yet."}</p>
                 )}
                 <Link href={`/citizen/complaints/${detail.id}`} className="btn block">Open full details</Link>
               </>
