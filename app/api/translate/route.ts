@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { translate } from "@/lib/ai";
 
+export const maxDuration = 60;
 const memo = new Map<string, string>();
 
 export async function POST(req: Request) {

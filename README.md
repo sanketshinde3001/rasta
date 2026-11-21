@@ -1,57 +1,146 @@
-# Rasta: Mumbai road complaints, followed to the rupee
+# Rasta: every rupee on Mumbai's roads, accounted for
 
-Built at **Claude Impact Lab Mumbai** (21 Nov 2026) for *Follow the Rupee: Mumbai Monsoon Roads*.
+> **Mumbai already tracks potholes. Nobody tracks who pays when the fix fails.**
+> Rasta joins the complaint, the work order, the contractor, the bill and the warranty into one trail. It then turns repairs that failed under warranty into money the city can get back.
 
-One app, two sides of the same problem:
+Built in one day at **Claude Impact Lab Mumbai** (21 Nov 2026) for the challenge *Follow the Rupee: Mumbai Monsoon Roads*.
 
-| Citizen | Ward officer |
+| ₹13.43 cr | ₹3.35 cr | ₹3.07 cr | 35 repairs |
+|---|---|---|---|
+| spent on monsoon road repairs (2,499 work orders) | **recoverable**: paid during warranty, billed above the rate card, or billed twice | spent on repairs that failed within 30 days | on one 506 m stretch of Kurla Andheri Road, all while it was under warranty |
+
+> All data is **synthetic** with planted patterns, and every contractor is fictional. The numbers show what the method finds, not facts about real Mumbai contractors.
+
+<p>
+  <img src="docs/screenshots/clawback.jpg" width="49%" alt="Warranty claw-back desk" />
+  <img src="docs/screenshots/kundli.jpg" width="49%" alt="Sadak Kundli: one road's life chart" />
+</p>
+
+## Where it fits
+
+BMC's **MyBMC MARG** app takes complaints and closes them. The concretisation dashboard names contractors for new cement roads. **Neither shows the bill, whether the repair held, or whether the road was still under warranty**, and the two aren't linked. Rasta is the accountability layer that sits *after* MARG. It serves the **Bombay High Court order of 13 Oct 2025** (Suo Motu PIL 71/2013): repairs within 48 hours, and compensation recovered from responsible officers *and contractors*.
+
+## What's inside
+
+### For the ward officer
+- **Warranty claw-back desk.** Every work order the city can recover, grouped by contractor:
+  - surface repairs on roads under their 3-year Defect Liability Period
+  - bills above 1.5× the rate card
+  - possible double bills
+
+  The officer reviews and unticks items, then Claude drafts a **recovery notice** in English, Hindi or Marathi that cites every work order ID. A **"warranties ending soon"** list prompts an inspection before the contractor's liability lapses.
+- **Complaint inbox ranked by risk to people.** The score weighs:
+  - severity and accident history
+  - hospitals and schools nearby
+  - flood hotspots, weighted by season, plus tide-sensitive spots
+  - traffic and bus routes
+  - public support and social-media chatter
+
+  Claude screens each complaint (likely valid / invalid / needs info) and a human decides. The inbox is paginated, with an "Approved by you" view.
+- **Smart budget.** Enter the money available, keep a 20% emergency reserve, and pick the season. Every open problem is ranked, given the repair method that fails least, and roads under warranty go back to their contractor for free. Claude writes a note for the ward committee.
+- **Tenders.** Open a tender from the plan. Claude compares bids on price and on each contractor's BMC track record; new bidders are judged on the bid itself. The officer awards, and citizens see who is fixing their road.
+
+### For the citizen
+- **Report in a minute, in the style of MyBMC MARG.**
+  - **Location:** a picker like a food-delivery app's, with search, "use current location", and the ward captured automatically.
+  - **Photo:** Claude fills the grievance type, subtype and description from it.
+  - **Voice first:** "Just say it" in Hindi, Marathi or English, and Claude fills the form.
+  - **Duplicates:** if the same problem is already reported within 100 m, you can support it instead of filing again.
+- **Track it:** status (Registered, In progress, Closed, Invalid), the service deadline, who fixed it, billed vs fair price, and before/after photos. Closed complaints can be rated or renewed, as in MARG.
+- **Sadak Kundli**, a life chart for every road:
+  - every repair, complaint, accident, rain day and big tide on one timeline
+  - the warranty status, plus a "patch or pave?" meter
+  - a QR code to open the page on a phone, and a one-line verdict from Claude
+- **City map** with real BMC ward boundaries. Each ward shows budget allocated, spent and left, and every complaint dot leads to the repair job and the contractor's scorecard.
+- **Contractor scorecards** a non-expert can read: an A–E grade, "3 of 10 repairs broke again within a month" (compared with peers in the same rain and flooding), and money questions.
+- **RTI letter for a specific job.** It is pre-filled with that work order's amounts and with questions that match its flags.
+
+### In three languages
+English, **हिंदी** and **मराठी** across the main citizen and officer screens. The app detects the language of every complaint, including Hinglish. Wherever text isn't in the reader's language, a **Translate** link appears, as on Twitter, for both citizens and officers.
+
+<p>
+  <img src="docs/screenshots/home-marathi.jpg" width="32%" alt="Citizen home in Marathi" />
+  <img src="docs/screenshots/form-marathi.jpg" width="32%" alt="Complaint form in Marathi" />
+  <img src="docs/screenshots/budget.jpg" width="34%" alt="Smart budget" />
+</p>
+
+## How Claude is used
+
+**Rule: code computes every number; Claude reads, explains and writes.** Audit flags, totals, priority scores and budget ranking are deterministic, so they can be reproduced and checked against an answer key.
+
+| Job | Where |
 |---|---|
-| Report a road problem in under a minute: photo, voice or text | An inbox ranked by **risk to people**, not by arrival time |
-| Claude reads the photo and fills the form (category, type, severity, description) | Claude screens every complaint (valid / invalid / needs info) and a human decides |
-| Location from GPS or the photo's geotag, with the ward found automatically | Priority score you can explain: accidents, hospitals and schools, flood hotspots (weighted by season), traffic, public support |
-| "Someone already reported this": **support** it instead of filing a duplicate, or file separately with a reason | **Smart budget**: enter the money you have and pick a season. It ranks every issue, picks the repair method that lasts, and sends roads under guarantee back to their contractor for free |
-| Track status (Registered, In progress, Closed, Invalid), the deadline, and who fixed it at what price | **Tenders**: bids come in, Claude compares them on price and on BMC track record (new bidders on their bid), you award |
-| City map, ward by ward: every complaint, its repair job, bill vs fair price, before and after photos | Awarding a tender updates the citizen's complaint automatically |
-| Contractor scorecards and "your rights" (deadlines, Defect Liability Period, escalation, RTI) | |
+| Photo → grievance type, subtype, severity, description, hazards | `lib/ai.ts › analyzePhoto` |
+| Voice transcript → form fields, plus what's still missing | `formFromSpeech` |
+| Complaint screening for the officer (human decides) | `triage` |
+| Note for the ward committee | `planBrief` |
+| Tender bid comparison | `analyzeBids` |
+| Recovery notice and one-line road verdict | `recoveryNotice`, `roadVerdict` |
+| Translation between English, Hindi, Marathi and Hinglish | `translate` |
 
-## Run it
+All calls use structured outputs where a form is filled. The model is set by `RASTA_MODEL` (default `claude-haiku-5-5`, the cheapest). Without an API key the app still runs, using rule-based fallbacks.
+
+## Run it locally
 
 ```bash
 npm install
-cp .env.example .env.local      # add ANTHROPIC_API_KEY (and optionally DEEPGRAM_API_KEY)
-npm run dev                     # http://localhost:3000
+cp .env.example .env.local     # add ANTHROPIC_API_KEY
+npm run dev                    # http://localhost:3000
 ```
 
-Login is a demo: the citizen gets an OTP pre-filled, and the officer picks a ward (Ward L, Kurla, has the most open complaints).
+The logins are demos and details are pre-filled. For the officer, choose **Ward L (Kurla)**: it has the most open complaints and the Kurla Andheri Road story.
 
-- **No API key?** Everything still works. AI steps fall back to rule-based tagging and triage.
-- **Voice:** uses Deepgram when `DEEPGRAM_API_KEY` is set, otherwise the browser's own speech recognition. There is also a "sample voice note" button for demos.
-- **Sample photos:** each one carries a Kurla geotag, so the duplicate check has something to find. They are openly licensed photos from Wikimedia Commons; see `public/samples/CREDITS.md`.
+| Variable | Needed | What for |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | recommended | Every AI feature |
+| `RASTA_MODEL` | no | Defaults to `claude-haiku-5-5` |
+| `DEEPGRAM_API_KEY` | no | Server-side speech-to-text; without it the browser's own speech recognition is used |
 
-## What's new in round 2
+## Deploy to Vercel
 
-- **Real ward map:** actual BMC ward boundaries (DataMeet Municipal Spatial Data); 93% of dataset complaints fall inside their recorded ward. Each ward shows budget allocated, spent and left.
-- **Delivery-app location picker:** move the map under a fixed pin, search areas, roads, hospitals and schools offline, or "Use current location". The ward is captured automatically.
-- **Form modelled on MyBMC MARG:** Grievance type and subtype, Description (250 chars), Upload/Capture photo, Ward (auto-captured), Acknowledgement (Anonymous, mobile, email). Status tiles: Registered, In progress, Closed, Invalid. Closed complaints get a star rating and **Renew complaint**, as in MARG.
-- **Voice first:** "Just say it". Claude fills the form, finds the spoken place on the map, and asks only for what is missing.
-- **Contractor scorecards for citizens:** an A–E grade, "out of 10 repairs" icon rows, city comparison bars, and money questions.
-- **Custom RTI letter** for any job (from a complaint, a contractor page, or the Your rights page).
-- **Officer:** paginated inbox, an "Approved by you" view, and the next step to fund it. The smart budget has a 20% emergency reserve, season buttons, and issue cards with signals (school or hospital, flood spot, accidents, bus route, failed before).
-- **More of the dataset used:** social media posts and tide-sensitive flood spots now raise priority; rainfall explains failed repairs on the map.
+1. Import this repo in Vercel. The framework (Next.js) is detected automatically.
+2. Add `ANTHROPIC_API_KEY` (and optionally `RASTA_MODEL` and `DEEPGRAM_API_KEY`) under **Settings → Environment Variables**.
+3. Deploy.
 
-## How it works
-
-- **Data:** `data/*.json` is exported from the hackathon dataset plus the Rupee Trail audit engine (`../rupee-trail`) by `npm run data`. It covers 6,500 complaints, 2,499 work orders with audit flags, 291 roads, 24 ward polygons, contractor scorecards, the next-rupee plan, and the Claude audit-court verdicts.
-- **AI** (`lib/ai.ts`) uses Claude with structured outputs. The model is set by `RASTA_MODEL` (default `claude-haiku-5-5`, the cheapest). It has five jobs: photo → form, voice → form, complaint triage, plan summary for the ward committee, and tender bid comparison. AI only suggests; every decision is a human click.
-- **Priority** (`lib/priority.ts`) is a transparent, deterministic score: severity 25%, accident risk 20%, hospital or school access 15%, flood 15% (scaled by season), traffic 15%, public demand 10%.
-- **State:** new complaints, support, decisions and tenders live in `.data/store.json` (or the temp dir on read-only hosts). Delete it to reset the demo.
+Things to know:
+- **The dataset ships with the repo.** It lives in `data/*.json` and is bundled through `outputFileTracingIncludes`, so no database is needed.
+- **New complaints and decisions don't last on Vercel.** New complaints, support, decisions, tenders and notices are written to a JSON file, which on Vercel lives in `/tmp`. It resets when the function goes cold. That's fine for a demo; a real deployment would use a database.
+- **AI calls take up to 30 seconds.** AI routes set `maxDuration = 60`.
 
 ## Demo script (3 minutes)
 
-1. **Citizen:** Report a problem, then use a sample photo (Pothole). Claude fills the form and the location comes from the photo's geotag. Submit; "Someone already reported this" appears, so support it, or file separately with a reason.
-2. Open **Map**, then Ward L. The map zooms in. Tap a green dot to see the contractor, billed vs fair price, and whether the repair held 30 days.
-3. **Officer** (Ward L): the new complaint is in the inbox with Claude's review. Confirm valid.
-4. **Smart budget:** switch the season to Pre-monsoon and drains jump up. "Write with AI" turns the plan into a note. Open a tender on the top issue.
-5. **Tender:** Analyse bids, then award. The citizen's complaint now shows who is fixing it.
+1. **Landing page:** ₹13.4 cr spent · **₹3.35 cr recoverable** · ₹3.07 cr didn't last.
+2. **Citizen** (switch to मराठी):
+   - Report a problem with "Just say it" and the sample voice note. The form fills itself and the map opens on LBS Marg.
+   - Or use the sample Pothole photo, which shows "already reported, 23 m away"; choose to support it.
+3. **Map → Ward L → a fixed dot:** the contractor's grade, billed vs fair price, and whether the repair held. Then "This road's full history".
+4. **Sadak Kundli, Kurla Andheri Road:** 35 repairs, ₹30.5 L, all under warranty. Scan the QR code.
+5. **Officer → Claw-back:** ₹45.3 L recoverable in Ward L. Review one contractor's items, then draft the notice in Hindi.
+6. **Smart budget:** switch to Pre-monsoon and drains jump up the list. Open a tender, analyse the bids and award it.
 
-All data is synthetic and every contractor is fictional. Ward boundaries: [DataMeet Municipal Spatial Data](https://github.com/datameet/Municipal_Spatial_Data) (`scripts/build_wards.py`). Dataset: [Claude-Impact-Labs-data-2](https://github.com/SumeetGDoshi/Claude-Impact-Labs-data-2), CC BY 4.0. Map © OpenStreetMap contributors.
+## Project layout
+
+```
+app/            Next.js App Router pages and API routes
+  citizen/      home, new complaint (location picker, photo AI, voice), complaint status
+  officer/      inbox + AI triage, claw-back desk, smart budget, tenders
+  roads/[id]    Sadak Kundli
+  map/          ward map explorer
+  contractors/  scorecards      rights/  deadlines, warranty lookup, RTI builder
+lib/            data loading, priority score, claw-back engine, AI calls, i18n, store
+data/           dataset + audit outputs as JSON (built by scripts/export_data.py)
+scripts/        export_data.py (from the Rupee Trail audit engine), build_wards.py
+public/samples  openly licensed demo photos (see CREDITS.md)
+```
+
+## Data and credits
+
+- **Dataset:** [Claude-Impact-Labs-data-2](https://github.com/SumeetGDoshi/Claude-Impact-Labs-data-2) (CC BY 4.0). It is synthetic: complaints, work orders, roads, contractors, rainfall, tides, accidents, facilities and flood hotspots.
+- **Audit rules:** over-billing above 1.5× the rate card; double bills (same road and method within 7 days with no complaint); repairs paid during the 3-year warranty; repairs failed within 30 days; missed deadlines.
+- **Ward boundaries:** [DataMeet Municipal Spatial Data](https://github.com/datameet/Municipal_Spatial_Data).
+- **Map tiles:** © OpenStreetMap contributors.
+- **Sample photos:** Wikimedia Commons, credited in `public/samples/CREDITS.md`.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
