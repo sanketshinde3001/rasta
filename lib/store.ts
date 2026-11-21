@@ -55,7 +55,8 @@ export async function hydrate() {
   if (cloudOn()) {
     try {
       state = (await cloudReadJson("rasta/state.json")) || EMPTY();
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.digest === "DYNAMIC_SERVER_USAGE") throw e; // let Next.js know the page is dynamic
       console.error("cloud read failed", e);
       state = state || EMPTY();
     }

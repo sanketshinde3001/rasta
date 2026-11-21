@@ -8,8 +8,8 @@ export type Session =
   | { role: "officer"; id: string; name: string; ward: string; title: string };
 
 export async function getSession(): Promise<Session | null> {
-  await hydrate(); // fresh shared state for this request
   const raw = (await cookies()).get("rasta_session")?.value;
+  await hydrate(); // fresh shared state for this request
   if (!raw) return null;
   try {
     return JSON.parse(Buffer.from(raw, "base64url").toString());
