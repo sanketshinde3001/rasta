@@ -7,6 +7,8 @@ import { getTender } from "@/lib/store";
 import { db } from "@/lib/data";
 import { fmtDate, inr } from "@/lib/taxonomy";
 import { TenderClient } from "./TenderClient";
+import { BID_ANALYSIS_VERSION } from "@/lib/bid-pricing";
+import { offlineBidAnalysis } from "@/lib/tenders";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,8 @@ export default async function TenderPage({ params }: { params: Promise<{ id: str
   const s = await requireRole("officer");
   const t = getTender((await params).id);
   if (!t) notFound();
+  // Refresh old cached rankings without making an unrequested AI call.
+  const analysis = t.analysis && t.analysis.version !== BID_ANALYSIS_VERSION ? offlineBidAnalysis(t) : t.analysis;
   const history = Object.fromEntries(db().contractors.map((c) => [c.contractor_id, { band: c.band, failVsPeers: +c.reopen_vs_peers, sla: +c.sla_met_pct, jobs: +c.jobs }]));
   return (
     <>
@@ -30,7 +34,7 @@ export default async function TenderPage({ params }: { params: Promise<{ id: str
             <span className={`pill ${t.status === "Awarded" ? "s-done" : "s-prog"}`} style={{ height: 30 }}>{t.status}</span>
           </div>
         </div>
-        <TenderClient tender={t} history={history} />
+        <TenderClient key={`${t.tender_id}-${analysis?.at || "unanalysed"}`} tender={{ ...t, analysis }} history={history} />
       </main>
     </>
   );

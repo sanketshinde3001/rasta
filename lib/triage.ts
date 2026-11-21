@@ -6,6 +6,7 @@ import { loadPhoto } from "./photos";
 import { priorityOf } from "./priority";
 import { bucketOf, currentSeason } from "./taxonomy";
 import { haversine } from "./geo";
+import { TRIAGE_REVIEW_VERSION } from "./photo-validation";
 
 // Same problem type (exact subtype) close by and still open
 export function similarOpen(lat: number, lon: number, sub: string | undefined, excludeId?: string, radius = 100) {
@@ -21,7 +22,7 @@ const running = new Set<string>();
 
 export async function runTriage(id: string, force = false) {
   const c = getComplaint(id);
-  if (!c || (c.triage && !force) || running.has(id)) return c?.triage;
+  if (!c || (c.triage?.review_version === TRIAGE_REVIEW_VERSION && !force) || running.has(id)) return c?.triage;
   running.add(id);
   try {
     const p = priorityOf(c, currentSeason());
@@ -31,7 +32,7 @@ export async function runTriage(id: string, force = false) {
     const facts = {
       complaint_id: c.complaint_id, category: c.category_reported, description: c.description,
       photo_description: c.photo ? "(see attached photo)" : c.photo_description || "no photo",
-      ai_photo_tags: c.ai ? { subcategory: c.ai.subcategory, severity: c.ai.severity, hazards: c.ai.hazards } : null,
+      ai_photo_tags: c.ai ? { by: c.ai.by, is_road_issue: c.ai.is_road_issue, subcategory: c.ai.subcategory, severity: c.ai.severity, hazards: c.ai.hazards, note: c.ai.note } : null,
       locality: c.locality_text, landmark: c.landmark, ward: c.ward_code, road_name: c.road_name,
       road_type: road?.road_type || p.road_type, under_dlp: road?.under_dlp,
       priority_signals: p.reasons.map((r) => r.text), repeat_failure: p.repeat_failure,

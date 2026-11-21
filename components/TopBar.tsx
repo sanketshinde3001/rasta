@@ -4,6 +4,7 @@ import { Logout } from "./Logout";
 import type { Session } from "@/lib/session";
 import { LangSwitch } from "./I18n";
 import { getT } from "@/lib/serverLang";
+import { BrandLogo } from "./BrandLogo";
 
 const NAV = {
   citizen: [
@@ -29,8 +30,7 @@ export async function TopBar({ session, active, wide }: { session: Session | nul
     <header className="topbar">
       <div className="topbar-in" style={{ maxWidth: wide || session?.role === "officer" ? 1120 : 900 }}>
         <Link href={session ? (session.role === "officer" ? "/officer" : "/citizen") : "/"} className="brand" style={{ flex: "none" }}>
-          <span className="brand-mark"><Ico name="road" size={18} stroke={2.2} /></span>
-          <span className="brand-word">Rasta</span>
+          <BrandLogo />
         </Link>
         <nav className="topnav">
           {nav.map((n) => (

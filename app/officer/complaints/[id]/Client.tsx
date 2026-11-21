@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import { Ico } from "@/components/Ico";
 import { fmtDateTime } from "@/lib/taxonomy";
 import { Tx } from "@/components/I18n";
+import { TRIAGE_REVIEW_VERSION } from "@/lib/photo-validation";
 
 const VSTYLE: Record<string, string> = { "Likely valid": "s-done", "Likely invalid": "p-High", "Needs more info": "s-reg" };
 
 export function AiReview({ id, initial }: { id: string; initial: any }) {
-  const [t, setT] = useState<any>(initial);
-  const [busy, setBusy] = useState(!initial);
+  const currentReview = initial?.review_version === TRIAGE_REVIEW_VERSION ? initial : null;
+  const [t, setT] = useState<any>(currentReview);
+  const [busy, setBusy] = useState(!currentReview);
   const [err, setErr] = useState("");
 
   async function run(force = false) {
@@ -22,7 +24,7 @@ export function AiReview({ id, initial }: { id: string; initial: any }) {
     setBusy(false);
   }
   useEffect(() => {
-    if (!initial) run();
+    if (!currentReview) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -38,7 +40,7 @@ export function AiReview({ id, initial }: { id: string; initial: any }) {
         <>
           <div className="row wrap-gap">
             <span className={`pill ${VSTYLE[t.validity]}`}>{t.validity}</span>
-            <span className="pill s-inv">Evidence: {t.severity_from_evidence} severity</span>
+            <span className="pill s-inv">{t.by === "offline" ? "Severity unverified" : `Evidence: ${t.severity_from_evidence} severity`}</span>
           </div>
           <Tx text={t.validity_reason} className="small bold" />
           <Tx text={t.summary} className="small ink2" />

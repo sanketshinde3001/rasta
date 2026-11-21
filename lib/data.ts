@@ -41,6 +41,7 @@ export type PhotoAI = {
   by?: "claude" | "offline";
 };
 export type Triage = {
+  review_version?: number;
   validity: "Likely valid" | "Likely invalid" | "Needs more info";
   validity_reason: string; summary: string; severity_from_evidence: "low" | "medium" | "high";
   suggested_action: string; flags: string[]; by?: "claude" | "offline"; at?: string;

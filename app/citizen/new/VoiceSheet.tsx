@@ -1,104 +1,126 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Ico } from "@/components/Ico";
-import { useLang } from "@/components/I18n";
 
-const LANGS = [
-  { code: "en-IN", label: "English / Hinglish", dg: "en" },
-  { code: "hi-IN", label: "हिंदी", dg: "hi" },
-  { code: "mr-IN", label: "मराठी", dg: null }, // Deepgram has no Marathi model: use the browser's recogniser
-];
 const SAMPLE = "Kurla station ke bahar LBS Marg pe bahut bada khadda hai, kal raat ek bike wala gir gaya. Bus stop ke saamne hai, please jaldi theek karo.";
+// Leave a small margin below Sarvam's 30-second REST limit.
+const RECORDING_LIMIT_MS = 29_000;
 
-// Voice complaint: Deepgram if the server has a key, otherwise the browser's speech recognition.
 export function VoiceSheet({ onClose, onResult }: { onClose: () => void; onResult: (r: any, transcript: string) => void }) {
-  const ui = useLang();
-  const [lang, setLang] = useState(ui === "mr" ? "mr-IN" : ui === "hi" ? "hi-IN" : "en-IN");
   const [state, setState] = useState<"idle" | "rec" | "busy" | "done">("idle");
   const [text, setText] = useState("");
   const [err, setErr] = useState("");
-  const [deepgram, setDeepgram] = useState(false);
-  const rec = useRef<any>(null);
   const media = useRef<MediaRecorder | null>(null);
-  const chunks = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mounted = useRef(false);
+  const request = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    fetch("/api/transcribe").then((r) => r.json()).then((j) => setDeepgram(j.deepgram)).catch(() => {});
-    return () => { rec.current?.stop?.(); media.current?.state === "recording" && media.current.stop(); };
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (timer.current) clearTimeout(timer.current);
+      request.current?.abort();
+      if (media.current) {
+        media.current.onstop = null;
+        if (media.current.state !== "inactive") media.current.stop();
+      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
   }, []);
 
   async function start() {
     setErr("");
-    setText("");
-    const dg = LANGS.find((l) => l.code === lang)?.dg;
-    if (deepgram && dg) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
-        const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((m) => MediaRecorder.isTypeSupported?.(m));
-        const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
-        chunks.current = [];
-        mr.ondataavailable = (e) => chunks.current.push(e.data);
-        mr.onstop = async () => {
-          stream.getTracks().forEach((t) => t.stop());
-          setState("busy");
-          const blob = new Blob(chunks.current, { type: mr.mimeType || "audio/webm" });
-          const r = await fetch(`/api/transcribe?lang=${dg}`, { method: "POST", headers: { "content-type": blob.type }, body: blob }).then((r) => r.json());
-          setText(r.transcript || "");
-          if (!r.transcript) setErr(r.error || "We didn't catch that. Try again or type below.");
-          setState("done");
-        };
-        mr.start(250);
-        media.current = mr;
-        setState("rec");
-      } catch {
-        setErr("Microphone is blocked. Allow it in the browser, or type below.");
-      }
-      return;
-    }
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       setErr("Voice isn't supported in this browser. Type below or use the sample.");
-      setState("done");
       return;
     }
-    const r = new SR();
-    r.lang = lang;
-    r.interimResults = true;
-    r.continuous = true;
-    let finalText = "";
-    r.onresult = (e: any) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
-        else interim += e.results[i][0].transcript;
+    setState("busy");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
+      if (!mounted.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
       }
-      setText((finalText + interim).trim());
-    };
-    r.onerror = (e: any) => {
-      setErr(e.error === "not-allowed" ? "Microphone is blocked. Allow it, or type below." : "Voice stopped. Type below or try again.");
-      setState("done");
-    };
-    r.onend = () => setState((s) => (s === "rec" ? "done" : s));
-    r.start();
-    rec.current = r;
-    setState("rec");
+      streamRef.current = stream;
+      const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((m) => MediaRecorder.isTypeSupported(m));
+      const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      mr.onstop = async () => {
+        if (timer.current) clearTimeout(timer.current);
+        stream.getTracks().forEach((t) => t.stop());
+        if (!mounted.current) return;
+        setState("busy");
+        const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
+        const controller = new AbortController();
+        request.current = controller;
+        try {
+          const response = await fetch("/api/transcribe", { method: "POST", headers: { "content-type": blob.type }, body: blob, signal: controller.signal });
+          const r = await response.json();
+          if (!mounted.current) return;
+          if (!response.ok || !r.transcript) {
+            setErr(r.error || "We didn't catch that. Try again or type below.");
+          } else {
+            setText(r.transcript);
+          }
+        } catch {
+          if (mounted.current) setErr("Transcription failed. Check your connection and try again, or type below.");
+        } finally {
+          if (mounted.current) setState("done");
+        }
+      };
+      mr.onerror = () => {
+        mr.onstop = null;
+        if (timer.current) clearTimeout(timer.current);
+        stream.getTracks().forEach((t) => t.stop());
+        if (mounted.current) {
+          setErr("Recording failed. Try again or type below.");
+          setState("done");
+        }
+      };
+      mr.start(250);
+      media.current = mr;
+      timer.current = setTimeout(() => { if (mr.state === "recording") mr.stop(); }, RECORDING_LIMIT_MS);
+      setState("rec");
+    } catch {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (mounted.current) {
+        setErr("Could not start the microphone. Allow microphone access, or type below.");
+        setState("done");
+      }
+    }
   }
 
   function stop() {
-    if (media.current?.state === "recording") media.current.stop();
-    rec.current?.stop();
-    if (!(deepgram && LANGS.find((l) => l.code === lang)?.dg)) setState("done");
+    if (media.current?.state === "recording") {
+      setState("busy");
+      media.current.stop();
+    }
   }
 
   async function use() {
+    setErr("");
     setState("busy");
-    const r = await fetch("/api/ai/voice", { method: "POST", body: JSON.stringify({ transcript: text }) }).then((r) => r.json());
-    if (r.error) {
-      setErr(r.error);
-      setState("done");
-      return;
+    const controller = new AbortController();
+    request.current = controller;
+    try {
+      const response = await fetch("/api/ai/voice", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ transcript: text }), signal: controller.signal });
+      const r = await response.json();
+      if (!mounted.current) return;
+      if (!response.ok || r.error) {
+        setErr(r.error || "Could not fill the form. Please try again.");
+        setState("done");
+        return;
+      }
+      onResult(r, text);
+    } catch {
+      if (mounted.current) {
+        setErr("Could not fill the form. Check your connection and try again.");
+        setState("done");
+      }
     }
-    onResult(r, text);
   }
 
   return (
@@ -108,16 +130,12 @@ export function VoiceSheet({ onClose, onResult }: { onClose: () => void; onResul
           <h2>Tell us what&apos;s wrong</h2>
           <button className="btn ghost sm" onClick={onClose}><Ico name="x" /></button>
         </div>
-        <p className="small ink2">Speak in any language. AI fills the form for you.</p>
-        {true && (
-          <div className="seg">
-            {LANGS.map((l) => <button key={l.code} className={lang === l.code ? "on" : ""} onClick={() => setLang(l.code)}>{l.label}</button>)}
-          </div>
-        )}
+        <p className="small ink2">Speak in your language — Gujarati, Marathi, Telugu, Hindi, English and more. We detect it automatically.</p>
         <div style={{ display: "grid", placeItems: "center", padding: "10px 0" }}>
           <button
             onClick={state === "rec" ? stop : start}
             disabled={state === "busy"}
+            aria-label={state === "rec" ? "Stop recording" : "Start recording"}
             style={{
               width: 92, height: 92, borderRadius: "50%", border: "none", cursor: "pointer", display: "grid", placeItems: "center",
               background: state === "rec" ? "var(--red)" : "var(--accent)", color: "#fff",
@@ -126,14 +144,14 @@ export function VoiceSheet({ onClose, onResult }: { onClose: () => void; onResul
           >
             {state === "busy" ? <span className="spin" /> : <Ico name={state === "rec" ? "stop" : "mic"} size={36} />}
           </button>
-          <p className="small muted" style={{ marginTop: 14 }}>{state === "rec" ? "Listening… tap to stop" : state === "busy" ? "Working…" : "Tap to speak"}</p>
+          <p className="small muted" style={{ marginTop: 14 }}>{state === "rec" ? "Listening… tap to stop (stops automatically at 29 seconds)" : state === "busy" ? "Working…" : "Tap to speak · up to 29 seconds"}</p>
         </div>
-        <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Your words appear here. You can also type." />
+        <textarea className="input" value={text} onChange={(e) => setText(e.target.value)} disabled={state === "busy" || state === "rec"} placeholder="Your words appear here. You can also type." />
         {err && <div className="banner warn small">{err}</div>}
         <button className="btn primary big" disabled={!text.trim() || state === "busy" || state === "rec"} onClick={use}>
           {state === "busy" ? <span className="spin" /> : <><Ico name="sparkles" /> Fill the form</>}
         </button>
-        <button className="linkbtn small" onClick={() => { setText(SAMPLE); setState("done"); setErr(""); }}>Use a sample voice note (Hinglish)</button>
+        <button className="linkbtn small" disabled={state === "busy" || state === "rec"} onClick={() => { setText(SAMPLE); setState("done"); setErr(""); }}>Use a sample voice note (Hinglish)</button>
       </div>
     </div>
   );

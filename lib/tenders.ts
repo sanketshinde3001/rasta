@@ -1,8 +1,9 @@
 import "server-only";
 import { db } from "./data";
 import { addTender, type Bid, type Tender } from "./store";
-import { nowStamp } from "./taxonomy";
+import { nowStamp, inr } from "./taxonomy";
 import type { BidAnalysis } from "./ai";
+import { BID_ANALYSIS_VERSION, bidPricing } from "./bid-pricing";
 
 export function createTenderFromRow(ward: string, r: any): Tender {
   const now = nowStamp();
@@ -67,9 +68,14 @@ export function offlineBidAnalysis(t: Tender): BidAnalysis {
       if (b.track_record.repairs_failing_vs_peers_same_conditions > 1.2) risks.push("Repairs fail more than peers");
       else strengths.push("Repairs hold as well as peers");
     } else { s -= 5; risks.push("No BMC history"); }
-    if (b.price_vs_estimate < 0.85) { s -= 10; risks.push("Price far below estimate"); }
+    const price = bidPricing(b.amount_inr, t.estimate_inr);
+    if (price) {
+      s += price.scoreAdjustment;
+      if (price.saving > 0) strengths.push(`${inr(price.saving)} below estimate (${price.percent}% saving for the same scope)`);
+      else if (price.saving < 0) risks.push(`${inr(-price.saving)} above estimate (${price.percent}%)`);
+    }
     if (b.warranty_months >= 24) { s += 5; strengths.push(`${b.warranty_months}-month warranty`); }
     return { bid_id: b.bid_id, score: Math.round(Math.max(0, Math.min(100, s))), strengths, risks, verdict: risks.length ? risks[0] : "Solid bid" };
   }).sort((a: any, b: any) => b.score - a.score);
-  return { ranking, recommendation: `Rule-based ranking (no AI key): ${ranking[0].bid_id} scores highest.`, caution: "Verify measurements and warranty terms before awarding.", by: "offline", at: new Date().toISOString() };
+  return { ranking, recommendation: ranking.length ? `Rule-based ranking: ${ranking[0].bid_id} scores highest across price savings, repair history, delivery and warranty.` : "No bids to compare yet.", caution: "Confirm that bids cover the same quantities, materials and work scope, and verify delivery and warranty terms.", by: "offline", at: new Date().toISOString(), version: BID_ANALYSIS_VERSION };
 }

@@ -31,7 +31,7 @@ const D: Record<string, [string, string, string]> = {
 
   // landing
   "land.title": ["Every rupee spent on Mumbai's roads, accounted for.", "मुंबई की सड़कों पर खर्च हुए हर रुपये का हिसाब।", "मुंबईच्या रस्त्यांवर खर्च झालेल्या प्रत्येक रुपयाचा हिशोब."],
-  "land.sub": ["Mumbai already tracks potholes. Nobody tracks who pays when the fix fails. Rasta does.", "मुंबई गड्ढों को ट्रैक करती है। मरम्मत टूटने पर पैसा कौन लौटाए, यह कोई नहीं देखता। रास्ता देखता है।", "मुंबई खड्डे नोंदवते. दुरुस्ती टिकली नाही तर पैसे कोण परत करणार, हे कोणी पाहत नाही. रस्ता पाहतो."],
+  "land.sub": ["Mumbai already tracks potholes. Nobody tracks who pays when the fix fails. My BMC Rasta does.", "मुंबई गड्ढों को ट्रैक करती है। मरम्मत टूटने पर पैसा कौन लौटाए, यह कोई नहीं देखता। My BMC Rasta देखता है।", "मुंबई खड्डे नोंदवते. दुरुस्ती टिकली नाही तर पैसे कोण परत करणार, हे कोणी पाहत नाही. My BMC Rasta पाहतो."],
   "land.continue": ["Continue as", "आगे बढ़ें", "पुढे जा"],
   "land.citizen": ["Citizen", "नागरिक", "नागरिक"],
   "land.citizen.d": ["Report a problem and see where the money went", "समस्या बताएं और देखें पैसा कहां गया", "समस्या नोंदवा आणि पैसा कुठे गेला ते पाहा"],
@@ -63,7 +63,7 @@ const D: Record<string, [string, string, string]> = {
   "f.title": ["New registration", "नई शिकायत", "नवीन तक्रार"],
   "f.sub": ["Takes about a minute. A photo helps the most.", "लगभग एक मिनट लगेगा। फ़ोटो सबसे ज़्यादा मदद करती है।", "सुमारे एक मिनिट लागेल. फोटो सर्वात उपयोगी."],
   "f.say": ["Just say it", "बस बोलिए", "फक्त बोला"],
-  "f.say.d": ["Speak in Hindi, Marathi or English. We fill the form for you.", "हिंदी, मराठी या अंग्रेज़ी में बोलें। फ़ॉर्म हम भरेंगे।", "हिंदी, मराठी किंवा इंग्रजीत बोला. फॉर्म आम्ही भरू."],
+  "f.say.d": ["Speak in your language. We detect it and fill the form for you.", "अपनी भाषा में बोलें। हम भाषा पहचानकर फ़ॉर्म भरेंगे।", "तुमच्या भाषेत बोला. भाषा ओळखून फॉर्म आम्ही भरू."],
   "f.location": ["Location", "स्थान", "ठिकाण"],
   "f.setloc": ["Set location on map", "नक्शे पर स्थान चुनें", "नकाशावर ठिकाण निवडा"],
   "f.finding": ["Finding your location…", "आपका स्थान खोज रहे हैं…", "तुमचे ठिकाण शोधत आहोत…"],
@@ -117,7 +117,7 @@ const D: Record<string, [string, string, string]> = {
   "o.review": ["waiting for review", "जांच बाकी", "तपासणी बाकी"],
   "o.high": ["high priority, not fixed", "ज़्यादा ज़रूरी, ठीक नहीं", "तातडीचे, दुरुस्त नाही"],
   "o.overdue": ["past their deadline", "समय सीमा पार", "मुदत संपली"],
-  "o.new": ["new from the Rasta app", "रास्ता ऐप से नई", "रस्ता ॲपवरून नवीन"],
+  "o.new": ["new from the My BMC Rasta app", "My BMC Rasta ऐप से नई", "My BMC Rasta ॲपवरून नवीन"],
 
   // claw-back
   "cb.title": ["Warranty claw-back desk", "वारंटी वसूली डेस्क", "वॉरंटी वसुली डेस्क"],
