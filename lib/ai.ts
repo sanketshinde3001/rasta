@@ -10,6 +10,7 @@ export const hasKey = () => !!process.env.ANTHROPIC_API_KEY;
 let _client: Anthropic | null = null;
 const client = () => (_client ||= new Anthropic());
 
+const LN: Record<string, string> = { en: "English", hi: "Hindi (Devanagari)", mr: "Marathi (Devanagari)" };
 const SUBS = Object.values(CATEGORIES).flatMap((c) => c.subs) as [string, ...string[]];
 const CATS = Object.keys(CATEGORIES) as [string, ...string[]];
 const TAXONOMY = Object.entries(CATEGORIES).map(([c, v]) => `- ${c}: ${v.subs.join(", ")}`).join("\n");
@@ -39,13 +40,13 @@ const PhotoSchema = z.object({
   note: z.string().describe("if not a road issue, say what the photo shows instead; else empty"),
 });
 
-export async function analyzePhoto(base64: string, mediaType: string, hint = ""): Promise<PhotoAI> {
+export async function analyzePhoto(base64: string, mediaType: string, hint = "", lang = "en"): Promise<PhotoAI> {
   if (!hasKey()) return offlinePhoto(hint);
   const out = await ask(
     `You tag citizen photos for a Mumbai municipal road complaint form. Pick exactly one category and subcategory from this list:\n${TAXONOMY}\nBe factual. Only describe what is visible. Severity: high = danger to life or road blocked, medium = vehicles must slow or swerve, low = cosmetic.`,
     [
       { type: "image", source: { type: "base64", media_type: mediaType as "image/jpeg", data: base64 } },
-      { type: "text", text: `Tag this complaint photo.${hint ? ` The citizen also said: "${hint}"` : ""}` },
+      { type: "text", text: `Tag this complaint photo.${hint ? ` The citizen also said: "${hint}"` : ""} Write "description" and "hazards" in ${LN[lang] || "English"}.` },
     ],
     PhotoSchema
   );
@@ -64,11 +65,11 @@ const VoiceSchema = z.object({
 });
 export type VoiceForm = z.infer<typeof VoiceSchema> & { by: "claude" | "offline" };
 
-export async function formFromSpeech(transcript: string): Promise<VoiceForm> {
+export async function formFromSpeech(transcript: string, lang = "en"): Promise<VoiceForm> {
   if (!hasKey()) return { ...offlineClassify(transcript), landmark: "", language: "", missing: ["location"], by: "offline" };
   const out = await ask(
     `A Mumbai citizen described a road problem by voice (any of English, Hindi, Marathi, Hinglish). Fill the complaint form. Categories:\n${TAXONOMY}`,
-    transcript,
+    `${transcript}\n\n(Write "description" in ${LN[lang] || "English"}.)`,
     VoiceSchema
   );
   return { ...out, category: SUB_TO_CAT[out.subcategory] || out.category, by: "claude" };

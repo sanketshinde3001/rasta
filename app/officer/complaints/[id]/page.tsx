@@ -10,6 +10,7 @@ import { similarOpen } from "@/lib/triage";
 import { BUCKET_STYLE, SEASONS, bucketOf, currentSeason, fmtDate, fmtDateTime, inr, photoOf } from "@/lib/taxonomy";
 import { FLAG_TEXT } from "@/lib/views";
 import { AiReview, Decision } from "./Client";
+import { Tx } from "@/components/I18n";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export default async function OfficerComplaint({ params }: { params: Promise<{ i
                 <img src={photoOf(c)!} alt="" className="photo" style={{ maxHeight: 360 }} />
               )}
               {!c.photo && c.source !== "app" && <p className="tiny muted">Sample photo. Citizen&apos;s photo: {c.photo_description || "none"}</p>}
-              <p>{c.description}</p>
+              <Tx text={c.description} lang={c.language} />
               <div className="chips">
                 {c.landmark && <span className="pill s-inv"><Ico name="pin" size={13} /> {c.landmark}</span>}
                 <span className="pill s-inv"><Ico name="users" size={13} /> {(c.upvotes || 0) + (c.supporters?.length || 0)} supporters</span>
@@ -79,7 +80,7 @@ export default async function OfficerComplaint({ params }: { params: Promise<{ i
 
             {past.length > 0 && (
               <section>
-                <div className="section-title"><h2>Past repairs on this road</h2><span className="small muted">{road?.under_dlp === "Y" ? "Road is under guarantee (DLP)" : ""}</span></div>
+                <div className="section-title"><h2>Past repairs on this road <Link href={`/roads/${road?.road_id}`} className="linkbtn small" style={{ marginLeft: 8 }}>Road history</Link></h2><span className="small muted">{road?.under_dlp === "Y" ? "Road is under guarantee (DLP)" : ""}</span></div>
                 <div className="card" style={{ padding: "4px 16px" }}>
                   <div className="list">
                     {past.map((w) => (

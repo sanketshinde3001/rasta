@@ -2,6 +2,21 @@
 import type { Lang } from "./lang";
 
 const D: Record<string, [string, string, string]> = {
+  // categories
+  "cat.Road surface": ["Road surface", "सड़क की सतह", "रस्त्याचा पृष्ठभाग"],
+  "cat.Water & drainage": ["Water & drainage", "पानी और नाली", "पाणी आणि गटार"],
+  "cat.Manholes & covers": ["Manholes & covers", "मैनहोल और ढक्कन", "मॅनहोल आणि झाकणे"],
+  "cat.Footpath": ["Footpath", "फुटपाथ", "पदपथ"],
+  "sub.Pothole": ["Pothole", "गड्ढा", "खड्डा"],
+  "sub.Road cave-in": ["Road cave-in", "सड़क धंसना", "रस्ता खचणे"],
+  "sub.Broken paver blocks": ["Broken paver blocks", "टूटे पेवर ब्लॉक", "तुटलेले पेव्हर ब्लॉक"],
+  "sub.Uneven or damaged road": ["Uneven or damaged road", "ऊबड़-खाबड़ सड़क", "खराब रस्ता"],
+  "sub.Waterlogging": ["Waterlogging", "जलभराव", "पाणी साचणे"],
+  "sub.Choked drain / nullah overflow": ["Choked drain / nullah overflow", "नाली जाम / नाला ओवरफ़्लो", "गटार तुंबणे / नाला ओसंडणे"],
+  "sub.Open or broken manhole": ["Open or broken manhole", "खुला या टूटा मैनहोल", "उघडे किंवा तुटलेले मॅनहोल"],
+  "sub.Missing drain cover": ["Missing drain cover", "नाली का ढक्कन ग़ायब", "गटाराचे झाकण गायब"],
+  "sub.Broken footpath": ["Broken footpath", "टूटा फुटपाथ", "तुटलेला पदपथ"],
+  "sub.Debris or material on footpath": ["Debris on footpath", "फुटपाथ पर मलबा", "पदपथावर राडारोडा"],
   // nav
   "nav.home": ["Home", "होम", "मुख्यपृष्ठ"],
   "nav.map": ["Map", "नक्शा", "नकाशा"],
@@ -120,7 +135,7 @@ const IDX: Record<Lang, number> = { en: 0, hi: 1, mr: 2 };
 export function tr(lang: Lang) {
   return (key: string, vars?: Record<string, string | number>) => {
     const row = D[key];
-    let s = row ? row[IDX[lang]] || row[0] : key;
+    let s = row ? row[IDX[lang]] || row[0] : key.replace(/^(cat|sub|st)\./, "");
     if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, String(v));
     return s;
   };

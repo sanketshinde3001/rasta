@@ -5,6 +5,8 @@ import { Ico } from "@/components/Ico";
 import { CopyButton } from "@/components/CopyButton";
 import { SupportButton } from "@/components/SupportButton";
 import { Feedback } from "@/components/Feedback";
+import { Tx } from "@/components/I18n";
+import { getT } from "@/lib/serverLang";
 import { getSession } from "@/lib/session";
 import { getComplaint } from "@/lib/store";
 import { db } from "@/lib/data";
@@ -17,6 +19,7 @@ export default async function ComplaintPage({ params, searchParams }: { params: 
   const { id } = await params;
   const sp = await searchParams;
   const s = await getSession();
+  const { t } = await getT();
   const c = getComplaint(decodeURIComponent(id).toUpperCase());
   if (!c) notFound();
   const ward = c.ward_code ? db().wardMap.get(c.ward_code) : null;
@@ -37,25 +40,25 @@ export default async function ComplaintPage({ params, searchParams }: { params: 
 
   // timeline
   type St = { t: string; d: string; state: "done" | "now" | "todo" | "bad" };
-  const steps: St[] = [{ t: "Registered", d: `${fmtDateTime(c.received_at)} · via ${c.channel}`, state: "done" }];
+  const steps: St[] = [{ t: t("c.registered"), d: `${fmtDateTime(c.received_at)} · via ${c.channel}`, state: "done" }];
   if (b === "Invalid") {
     steps.push({ t: "Marked invalid", d: c.decision?.note || statusNote(c.status) || "The ward office could not act on this complaint.", state: "bad" });
   } else {
     const verified = b !== "Registered";
     steps.push({
-      t: "Checked by ward office",
+      t: t("c.checked"),
       d: verified ? (c.decision?.note || "Confirmed as a valid complaint.") : `Waiting for Ward ${c.ward_code || ""} office to review it.`,
       state: verified ? "done" : "now",
     });
     steps.push({
-      t: "Repair work",
+      t: t("c.repair"),
       d: job
         ? `${job.contractor_name.replace(" (synthetic)", "")} assigned on ${fmtDate(job.assigned_at)} · ${job.repair_method}`
         : [...(c.history || [])].reverse().find((h) => h.text.startsWith("Repair awarded"))?.text || (b === "In progress" ? "Queued for repair." : "Not started yet."),
       state: b === "Closed" ? "done" : b === "In progress" ? "now" : "todo",
     });
     steps.push({
-      t: b === "Closed" ? (c.status === "Resolved" ? "Fixed" : "Closed") : "Fixed",
+      t: b === "Closed" ? (c.status === "Resolved" ? t("c.fixed") : t("st.Closed")) : t("c.fixed"),
       d: b === "Closed" ? (c.status === "Resolved" ? `Closed on ${fmtDate(c.resolved_at || job?.completed_at)}` : statusNote(c.status)) : "",
       state: b === "Closed" ? "done" : "todo",
     });
@@ -89,7 +92,7 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
               <p className="ink2" style={{ marginTop: 4 }}>{c.road_name || c.locality_text || "Shared location"}{ward ? ` · Ward ${c.ward_code}` : ""}</p>
               <p className="tiny muted num" style={{ marginTop: 2 }}>#{c.complaint_id} · {supporters} supporter{supporters === 1 ? "" : "s"}</p>
             </div>
-            <span className={`pill ${BUCKET_STYLE[b]}`} style={{ height: 30, fontSize: 14 }}>{b}</span>
+            <span className={`pill ${BUCKET_STYLE[b]}`} style={{ height: 30, fontSize: 14 }}>{t(`st.${b}`)}</span>
           </div>
         </div>
 
@@ -130,7 +133,7 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
             <img src={photoOf(c)!} alt="" className="photo" style={{ maxHeight: 320 }} />
           )}
           {!c.photo && c.source !== "app" && <p className="tiny muted" style={{ marginTop: 6 }}>Sample photo. {c.photo_description ? `Citizen's photo showed: ${c.photo_description}` : ""}</p>}
-          <p>{c.description}</p>
+          <Tx text={c.description} lang={c.source === "app" ? c.language : c.language} />
           {c.landmark && <p className="small ink2"><Ico name="pin" size={14} /> {c.landmark}</p>}
           {c.ai && (
             <div className="chips">
@@ -143,7 +146,7 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
 
         {job && (
           <section>
-            <div className="section-title"><h2>Who fixed it, and what it cost</h2></div>
+            <div className="section-title"><h2>{t("c.who")}</h2></div>
             <div className="card stack">
               <div className="between">
                 <Link href={`/contractors/${job.contractor_id}`} className="row">
@@ -153,9 +156,9 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
                 <Ico name="chevron" className="muted" />
               </div>
               <div className="grid3">
-                <div className="stat"><b className={job.rate_ratio > 1.3 ? "red" : ""}>{inr(job.cost_inr)}</b><span>billed</span></div>
-                <div className="stat"><b>{inr(job.expected_inr)}</b><span>fair price (rate card)</span></div>
-                <div className="stat"><b className={job.reopened_within_30d === "Y" ? "red" : "green"}>{job.reopened_within_30d === "Y" ? "No" : "Yes"}</b><span>held 30 days</span></div>
+                <div className="stat"><b className={job.rate_ratio > 1.3 ? "red" : ""}>{inr(job.cost_inr)}</b><span>{t("c.billed")}</span></div>
+                <div className="stat"><b>{inr(job.expected_inr)}</b><span>{t("c.fair")}</span></div>
+                <div className="stat"><b className={job.reopened_within_30d === "Y" ? "red" : "green"}>{job.reopened_within_30d === "Y" ? "No" : "Yes"}</b><span>{t("c.held")}</span></div>
               </div>
               {job.flagList.filter((f) => f !== "SLA_MISSED").map((f) => FLAG_TEXT[f] && (
                 <div key={f} className={`banner ${FLAG_TEXT[f].money ? "bad" : "warn"} small`}>
@@ -177,7 +180,8 @@ My complaint #${c.complaint_id} (${c.category_reported}${c.road_name ? ` on ${c.
                 </div>
               )}
               {job.engineer_remark && <p className="small ink2">Engineer&apos;s note: “{job.engineer_remark}”</p>}
-              <Link href={`/rights?wo=${job.work_order_id}#rti`} className="btn block"><Ico name="file" size={18} /> Ask for this bill (RTI)</Link>
+              <Link href={`/roads/${job.road_id}`} className="btn block"><Ico name="road" size={18} /> {t("c.road")}</Link>
+              <Link href={`/rights?wo=${job.work_order_id}#rti`} className="btn ghost block"><Ico name="file" size={18} /> {t("c.rti")}</Link>
             </div>
           </section>
         )}

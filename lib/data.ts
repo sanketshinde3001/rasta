@@ -65,7 +65,7 @@ let cache: null | {
   workOrders: WorkOrder[]; woMap: Map<string, WorkOrder>; woByRoad: Map<string, WorkOrder[]>;
   complaints: Complaint[]; contractors: Contractor[]; plan: any[]; briefs: Record<string, any>;
   ctx: { facilities: any[]; hotspots: any[]; localities: any[]; rate_card: any[]; contractors_list: any[] };
-  summary: any; signals: { social_by_road: Record<string, number>; social_by_locality: Record<string, number>; social_posts: any[]; rain: any[]; big_tide_days: number; max_tide_m: number };
+  summary: any; signals: { social_by_road: Record<string, number>; social_by_locality: Record<string, number>; social_posts: any[]; rain: any[]; big_tide_days: number; max_tide_m: number; rain_daily: Record<string, [string, number][]>; tides: [string, number, string][]; accidents: any[] };
 } = null;
 
 export function db() {

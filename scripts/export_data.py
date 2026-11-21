@@ -140,5 +140,8 @@ dump("signals.json", {
     "social_posts": rec(posts[["post_id", "posted_at", "source", "text", "likes_or_forwards"]]),
     "rain": rec(rain_sum),
     "big_tide_days": int((tides.big_tide_flag == "Y").sum()),
+    "rain_daily": {st: [[d, float(m)] for d, m in zip(g.date, g.rainfall_mm)] for st, g in rain.groupby("station")},
+    "tides": [[d, float(h), f] for d, h, f in zip(tides.date, tides.height_m, tides.big_tide_flag)],
+    "accidents": rec(pd.read_csv(D / "accidents.csv")[["accident_id", "occurred_at", "ward_code", "road_id", "vehicle_type", "severity", "probable_cause"]]),
     "max_tide_m": float(tides.height_m.max()),
 })

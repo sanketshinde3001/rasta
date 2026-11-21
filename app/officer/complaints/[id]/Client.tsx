@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Ico } from "@/components/Ico";
 import { fmtDateTime } from "@/lib/taxonomy";
+import { Tx } from "@/components/I18n";
 
 const VSTYLE: Record<string, string> = { "Likely valid": "s-done", "Likely invalid": "p-High", "Needs more info": "s-reg" };
 
@@ -39,8 +40,8 @@ export function AiReview({ id, initial }: { id: string; initial: any }) {
             <span className={`pill ${VSTYLE[t.validity]}`}>{t.validity}</span>
             <span className="pill s-inv">Evidence: {t.severity_from_evidence} severity</span>
           </div>
-          <p className="small"><b>{t.validity_reason}</b></p>
-          <p className="small ink2">{t.summary}</p>
+          <Tx text={t.validity_reason} className="small bold" />
+          <Tx text={t.summary} className="small ink2" />
           <p className="small"><span className="muted">Suggested next step:</span> {t.suggested_action}</p>
           {t.flags?.length > 0 && <div className="chips">{t.flags.map((f: string) => <span key={f} className="pill s-reg">{f}</span>)}</div>}
           <p className="tiny muted">{t.by === "claude" ? "Claude" : "Rules (no AI key)"} · {t.at ? fmtDateTime(new Date(new Date(t.at).getTime() + 330 * 60000).toISOString().slice(0, 16)) : ""} · AI suggests, you decide.</p>

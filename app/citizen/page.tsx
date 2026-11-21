@@ -4,12 +4,14 @@ import { Ico } from "@/components/Ico";
 import { requireRole } from "@/lib/session";
 import { allComplaints } from "@/lib/store";
 import { HomeList } from "./HomeList";
+import { getT } from "@/lib/serverLang";
 import { bucketOf, photoOf } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
 
 export default async function CitizenHome() {
   const s = await requireRole("citizen");
+  const { t } = await getT();
   const mine = allComplaints()
     .filter((c) => c.complainant_id === s.id || (c.supporters || []).includes(s.id))
     .sort((a, b) => (b.received_at > a.received_at ? 1 : -1));
@@ -18,12 +20,12 @@ export default async function CitizenHome() {
       <TopBar session={s} active="/citizen" />
       <main className="wrap stack-lg">
         <div>
-          <p className="muted small">Namaste, {s.name.split(" ")[0]} · {s.area}</p>
-          <h1 style={{ marginTop: 4 }}>Seen a problem on the road?</h1>
+          <p className="muted small">{t("home.hi", { n: s.name.split(" ")[0] })} · {s.area}</p>
+          <h1 style={{ marginTop: 4 }}>{t("home.title")}</h1>
         </div>
 
         <Link href="/citizen/new" className="btn primary big" style={{ height: 64, fontSize: 18 }}>
-          <Ico name="plus" size={22} /> New registration
+          <Ico name="plus" size={22} /> {t("home.new")}
         </Link>
 
         <HomeList
@@ -34,19 +36,19 @@ export default async function CitizenHome() {
         />
 
         <section>
-          <div className="section-title"><h2>Know your city</h2></div>
+          <div className="section-title"><h2>{t("home.city")}</h2></div>
           <div className="grid3">
             <Link href="/map" className="tile">
               <span className="tile-ico"><Ico name="map" /></span>
-              <b>City map</b><span>Complaints and repairs near you</span>
+              <b>{t("nav.map")}</b><span>{t("home.map.d")}</span>
             </Link>
             <Link href="/contractors" className="tile">
               <span className="tile-ico"><Ico name="hardhat" /></span>
-              <b>Contractors</b><span>Who fixes your roads, and how well</span>
+              <b>{t("nav.contractors")}</b><span>{t("home.con.d")}</span>
             </Link>
             <Link href="/rights" className="tile">
               <span className="tile-ico"><Ico name="shield" /></span>
-              <b>Your rights</b><span>Deadlines, free re-repairs, escalation</span>
+              <b>{t("nav.rights")}</b><span>{t("home.rights.d")}</span>
             </Link>
           </div>
         </section>

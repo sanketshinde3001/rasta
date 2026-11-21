@@ -4,6 +4,7 @@ import { addComplaint } from "@/lib/store";
 import { locate } from "@/lib/data";
 import { categoryOf, nowStamp } from "@/lib/taxonomy";
 import { runTriage } from "@/lib/triage";
+import { detectLang } from "@/lib/lang";
 
 export async function POST(req: Request) {
   const s = await getSession();
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
   const now = nowStamp();
   const c = addComplaint({
     received_at: now, channel: "Rasta app", category_reported: b.subcategory, category: categoryOf(b.subcategory),
-    description: b.description.trim(), language: b.language || "en", locality_text: loc.locality,
+    description: b.description.trim(), language: detectLang(b.description), locality_text: loc.locality,
     ward_code: loc.ward_code, lat: loc.lat, lon: loc.lon, photo_description: b.ai?.description || null,
     complainant_id: s.id, citizen_name: b.anonymous ? "Anonymous" : s.name, upvotes: 0, status: "Registered", resolved_at: null,
     road_id: loc.road_id, road_name: loc.road_name, work_order_id: null, source: "app", photo: b.photo || null,

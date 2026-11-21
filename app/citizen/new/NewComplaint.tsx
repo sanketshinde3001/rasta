@@ -5,6 +5,7 @@ import { Ico } from "@/components/Ico";
 import { LocationPicker, type Loc } from "@/components/LocationPicker";
 import { CATEGORIES, SAMPLES, SUB_TO_CAT, fmtDate, photoOf } from "@/lib/taxonomy";
 import { VoiceSheet } from "./VoiceSheet";
+import { useT, useLang } from "@/components/I18n";
 
 type Similar = { source?: string; complaint_id: string; category_reported: string; description: string; status: string; received_at: string; road_name: string | null; locality_text: string | null; photo: string | null; supporters: number; distance_m: number };
 export type Prefill = { subcategory: string; lat: number; lon: number; renew_of: string } | null;
@@ -28,6 +29,8 @@ async function resize(file: Blob, max = 1280): Promise<string> {
 const locateAt = (lat: number, lon: number): Promise<Loc> => fetch("/api/locate", { method: "POST", body: JSON.stringify({ lat, lon }) }).then((r) => r.json());
 
 export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefill }) {
+  const t = useT();
+  const uiLang = useLang();
   const [loc, setLoc] = useState<Loc | null>(null);
   const [locSource, setLocSource] = useState("device");
   const [picker, setPicker] = useState<{ lat: number; lon: number } | null | false>(false);
@@ -77,7 +80,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
     setAiState("busy");
     setNote(null);
     try {
-      const r = await fetch("/api/ai/photo", { method: "POST", body: JSON.stringify({ image: dataUrl, hint: desc }) }).then((r) => r.json());
+      const r = await fetch("/api/ai/photo", { method: "POST", body: JSON.stringify({ image: dataUrl, hint: desc, lang: uiLang }) }).then((r) => r.json());
       if (r.photo) setPhoto(r.photo);
       if (!r.ai) {
         setAiState("error");
@@ -196,7 +199,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
 
   const need = (f: string) => missing.includes(f);
   const aiNote = filled && (
-    <div className="field-note"><Ico name="sparkles" size={13} /> {filled === "photo" ? "Filled from your photo" : "Filled from your voice"} · you can change it</div>
+    <div className="field-note"><Ico name="sparkles" size={13} /> {filled === "photo" ? t("f.fromphoto") : t("f.fromvoice")}</div>
   );
 
   return (
@@ -206,21 +209,21 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
         <button className="voice-cta" onClick={() => setVoiceOpen(true)}>
           <span className="ico-circle" style={{ background: "var(--accent)", color: "#fff", width: 48, height: 48 }}><Ico name="mic" size={24} /></span>
           <span style={{ flex: 1, textAlign: "left" }}>
-            <b>Just say it</b>
-            <span className="small ink2" style={{ display: "block" }}>Speak in Hindi, Marathi or English. We fill the form for you.</span>
+            <b>{t("f.say")}</b>
+            <span className="small ink2" style={{ display: "block" }}>{t("f.say.d")}</span>
           </span>
           <Ico name="chevron" className="muted" />
         </button>
       )}
       {note && <div className={`banner small ${note.kind}`}><Ico name={note.kind === "warn" ? "alert" : "mic"} size={18} /><div>{note.text}</div></div>}
       {missing.length > 0 && filled === "voice" && (
-        <div className="banner warn small"><Ico name="info" size={18} /><div><b>Almost done.</b> Please add: {missing.join(", ")}.</div></div>
+        <div className="banner warn small"><Ico name="info" size={18} /><div><b>{t("f.almost")}</b> {missing.join(", ")}.</div></div>
       )}
 
       <div className="card stack form">
         {/* Location */}
         <div>
-          <label className="fl">Location <span className="req">*</span></label>
+          <label className="fl">{t("f.location")} <span className="req">*</span></label>
           {loc ? (
             <button className="loc-row" onClick={() => setPicker({ lat: loc.lat, lon: loc.lon })}>
               <Ico name="pin" size={20} className="green" />
@@ -228,12 +231,12 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
                 <b className="ellipsis" style={{ display: "block" }}>{loc.road_name || loc.locality || "Pinned spot"}</b>
                 <span className="tiny muted">{landmark ? `${landmark} · ` : ""}{locSource === "photo" ? "from photo's location tag" : locSource === "device" ? "your current location" : "set on map"}</span>
               </span>
-              <span className="linkbtn small">Change</span>
+              <span className="linkbtn small">{t("f.change")}</span>
             </button>
           ) : (
             <button className={`loc-row empty ${need("location") ? "need" : ""}`} onClick={() => setPicker(null)}>
               {gpsState === "asking" ? <span className="spin" style={{ color: "var(--accent)" }} /> : <Ico name="pin" size={20} />}
-              <span style={{ flex: 1, textAlign: "left" }}>{gpsState === "asking" ? "Finding your location…" : "Set location on map"}</span>
+              <span style={{ flex: 1, textAlign: "left" }}>{gpsState === "asking" ? t("f.finding") : t("f.setloc")}</span>
               <Ico name="chevron" size={18} className="muted" />
             </button>
           )}
@@ -241,11 +244,11 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
 
         <div className="grid2">
           <div>
-            <label className="fl">Ward <span className="muted">(auto-captured)</span></label>
+            <label className="fl">{t("f.ward")} <span className="muted">{t("f.auto")}</span></label>
             <div className="input muted" style={{ display: "flex", alignItems: "center" }}>{loc?.ward_code ? `Ward ${loc.ward_code}` : "Ward"}</div>
           </div>
           <div>
-            <label className="fl">Area</label>
+            <label className="fl">{t("f.area")}</label>
             <div className="input muted ellipsis" style={{ display: "flex", alignItems: "center" }}>{loc?.locality || loc?.ward_name || "–"}</div>
           </div>
         </div>
@@ -253,7 +256,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
 
         {/* Photo */}
         <div>
-          <label className="fl">Photo <span className="muted">(recommended, it is your proof)</span></label>
+          <label className="fl">{t("f.photo")} <span className="muted">{t("f.photo.why")}</span></label>
           <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
           {preview ? (
             <div style={{ position: "relative" }}>
@@ -261,7 +264,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
               <img src={preview} alt="Your photo" className="photo" style={{ maxHeight: 260 }} />
               {aiState === "busy" && (
                 <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,.75)", borderRadius: 12, display: "grid", placeItems: "center" }}>
-                  <div className="row bold" style={{ color: "var(--accent)" }}><span className="spin" /> Reading your photo…</div>
+                  <div className="row bold" style={{ color: "var(--accent)" }}><span className="spin" /> {t("f.reading")}</div>
                 </div>
               )}
               <button className="btn sm" style={{ position: "absolute", top: 10, right: 10 }} onClick={() => fileRef.current?.click()}>Change</button>
@@ -269,9 +272,9 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
           ) : (
             <div className="row wrap-gap">
               <button className={`btn ${need("photo") ? "need" : ""}`} onClick={() => fileRef.current?.click()} style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>
-                <Ico name="camera" size={19} /> Upload / Capture photo
+                <Ico name="camera" size={19} /> {t("f.upload")}
               </button>
-              <button className="linkbtn small" onClick={() => setSamplesOpen(true)}><Ico name="image" size={16} /> Use a sample photo</button>
+              <button className="linkbtn small" onClick={() => setSamplesOpen(true)}><Ico name="image" size={16} /> {t("f.sample")}</button>
             </div>
           )}
           {aiState === "done" && ai && (
@@ -284,39 +287,39 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
 
         {/* Type */}
         <div>
-          <label className="fl">Grievance type <span className="req">*</span></label>
+          <label className="fl">{t("f.type")} <span className="req">*</span></label>
           <div className="type-grid">
             {Object.entries(CATEGORIES).map(([c, v]) => (
               <button key={c} className={`type-btn ${category === c ? "on" : ""} ${need("problem type") && !category ? "need" : ""}`} onClick={() => { setCategory(c); if (SUB_TO_CAT[sub] !== c) setSub(v.subs[0]); setMissing((m) => m.filter((x) => x !== "problem type")); }}>
                 <Ico name={v.icon} size={22} />
-                <span>{c}</span>
+                <span>{t(`cat.${c}`)}</span>
               </button>
             ))}
           </div>
         </div>
         <div>
-          <label className="fl">Grievance subtype <span className="req">*</span></label>
+          <label className="fl">{t("f.subtype")} <span className="req">*</span></label>
           <select className={`input ${filled ? "ai-filled" : ""}`} value={sub} disabled={!category} onChange={(e) => setSub(e.target.value)}>
-            {!category && <option>Please select grievance type first</option>}
-            {category && CATEGORIES[category].subs.map((s) => <option key={s}>{s}</option>)}
+            {!category && <option>{t("f.pickfirst")}</option>}
+            {category && CATEGORIES[category].subs.map((s) => <option key={s} value={s}>{t(`sub.${s}`)}</option>)}
           </select>
           {aiNote}
         </div>
 
         <div>
-          <div className="between"><label className="fl">Description <span className="muted">(optional)</span></label><span className="tiny muted num">{desc.length}/250</span></div>
+          <div className="between"><label className="fl">{t("f.desc")} <span className="muted">{t("f.optional")}</span></label><span className="tiny muted num">{desc.length}/250</span></div>
           <textarea className={`input ${filled ? "ai-filled" : ""} ${need("description") ? "need" : ""}`} maxLength={250} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="e.g. Deep pothole near the bus stop, bikes are swerving" />
         </div>
 
         {/* Acknowledgement */}
         <div>
-          <label className="fl">Acknowledgement details</label>
+          <label className="fl">{t("f.ack")}</label>
           <div className="stack" style={{ gap: 8 }}>
-            <label className="check"><input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} /> Anonymous <span className="tiny muted">(you won&apos;t get updates)</span></label>
+            <label className="check"><input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} /> {t("f.anon")} <span className="tiny muted">{t("f.anon.d")}</span></label>
             {!anon && (
               <>
                 <label className="check"><input type="checkbox" checked={usePhone} onChange={(e) => setUsePhone(e.target.checked)} /> <span className="input num" style={{ minHeight: 42, padding: "9px 12px", flex: 1 }}>+91 {phone}</span></label>
-                <label className="check"><input type="checkbox" checked={useEmail} onChange={(e) => setUseEmail(e.target.checked)} /> <input className="input" style={{ minHeight: 42, padding: "9px 12px", flex: 1 }} placeholder="Enter email" value={email} onChange={(e) => { setEmail(e.target.value); setUseEmail(!!e.target.value); }} /></label>
+                <label className="check"><input type="checkbox" checked={useEmail} onChange={(e) => setUseEmail(e.target.checked)} /> <input className="input" style={{ minHeight: 42, padding: "9px 12px", flex: 1 }} placeholder={t("f.email")} value={email} onChange={(e) => { setEmail(e.target.value); setUseEmail(!!e.target.value); }} /></label>
               </>
             )}
           </div>
@@ -325,7 +328,7 @@ export function NewComplaint({ phone, prefill }: { phone: string; prefill: Prefi
 
       {err && <div className="banner bad">{err}</div>}
       <button className="btn primary big" disabled={busy || aiState === "busy"} onClick={() => submit()}>
-        {busy ? <span className="spin" /> : "Submit complaint"}
+        {busy ? <span className="spin" /> : t("f.submit")}
       </button>
 
       {picker !== false && (

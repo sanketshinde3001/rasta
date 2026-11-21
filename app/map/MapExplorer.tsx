@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Ico } from "@/components/Ico";
+import { Tx } from "@/components/I18n";
 import { TILE_ATTR, TILE_URL } from "@/components/PinMap";
 import { fmtDate, inr, inrShort } from "@/lib/taxonomy";
 
@@ -261,7 +262,7 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
                     <p className="tiny muted" style={{ marginTop: 4 }}>{detail.job?.after ? "After repair (sample)" : "After"}</p>
                   </div>
                 </div>
-                <p className="small ink2" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>“{detail.desc}”</p>
+                <Tx text={detail.desc} lang={detail.lang} className="small ink2" />
                 {detail.job ? (
                   <>
                     <Link href={`/contractors/${detail.job.contractor_id}`} className="card flat tight row card-link">
@@ -284,7 +285,8 @@ export function MapExplorer({ wards, geo, initialWard, initialComplaint, loggedI
                 ) : (
                   <p className="small muted">{detail.status_note || "No repair job linked yet."}</p>
                 )}
-                <Link href={`/citizen/complaints/${detail.id}`} className="btn block">Open full details</Link>
+                {detail.road_id && <Link href={`/roads/${detail.road_id}`} className="btn block"><Ico name="road" size={18} /> This road&apos;s full history</Link>}
+                <Link href={`/citizen/complaints/${detail.id}`} className="btn ghost block">Open full details</Link>
               </>
             )}
           </div>

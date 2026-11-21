@@ -332,3 +332,8 @@ body:has(.lp) .topbar { z-index: 0; }
 .cb-item.off { opacity: 0.45; }
 .cb-item input { width: 18px; height: 18px; accent-color: var(--accent); margin-top: 2px; flex: none; }
 .notice { white-space: pre-wrap; font-size: 14px; line-height: 1.55; background: #fbfbf9; border: 1px solid var(--line); border-radius: 12px; padding: 16px; max-height: 420px; overflow: auto; }
+.qr { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.warranty-on { border-color: #cfe6d9; }

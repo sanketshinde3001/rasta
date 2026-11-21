@@ -12,7 +12,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const con = j ? db().contractors.find((x) => x.contractor_id === j.contractor_id) : null;
   const days = Math.floor((Date.now() - new Date(c.received_at.replace(" ", "T")).getTime()) / 864e5);
   return NextResponse.json({
-    id: c.complaint_id, sub: c.category_reported, desc: c.description, status: c.status, bucket: bucketOf(c.status),
+    id: c.complaint_id, road_id: c.road_id, lang: c.language, sub: c.category_reported, desc: c.description, status: c.status, bucket: bucketOf(c.status),
     at: c.received_at, road: c.road_name || c.locality_text, photo: photoOf(c), real_photo: !!c.photo,
     supporters: (c.upvotes || 0) + (c.supporters?.length || 0), days_open: days,
     status_note: c.history?.length ? c.history[c.history.length - 1].text : null,

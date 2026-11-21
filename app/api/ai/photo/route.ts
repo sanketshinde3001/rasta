@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getLang } from "@/lib/serverLang";
 import { analyzePhoto } from "@/lib/ai";
 import { savePhoto } from "@/lib/photos";
 
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Please upload a JPG or PNG photo." }, { status: 400 });
   }
   try {
-    const ai = await analyzePhoto(saved.data, saved.type, hint || "");
+    const ai = await analyzePhoto(saved.data, saved.type, hint || "", await getLang());
     return NextResponse.json({ photo: saved.url, ai });
   } catch (e: any) {
     return NextResponse.json({ photo: saved.url, ai: null, error: `AI could not read the photo (${e?.status || e?.name || "error"}). Please fill the form yourself.` });
