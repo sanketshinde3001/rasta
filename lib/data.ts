@@ -99,7 +99,9 @@ export function wardAt(lat: number, lon: number): string | null {
     const polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
     for (const p of polys) if (inRing(lon, lat, p[0])) return f.properties.ward_code;
   }
-  return null;
+  // just outside a boundary (coast, creek): nearest locality within 1.5 km decides
+  const l = nearestLocality(lat, lon);
+  return l && l.dist < 1500 ? l.ward_code : null;
 }
 
 export function nearestRoad(lat: number, lon: number, maxM = 400): { road: Road; dist: number } | null {

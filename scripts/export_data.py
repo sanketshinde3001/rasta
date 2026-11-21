@@ -28,7 +28,7 @@ wp = pd.read_csv(O / "next_rupee_wards.csv")
 w = wards.merge(ws.drop(columns=["ward_name", "low_lying_index", "monsoon_repair_budget_inr_2025"]), on="ward_code", how="left")
 w = w.merge(wp[["ward_code"] + [c for c in wp.columns if c not in w.columns]], on="ward_code", how="left")
 dump("wards.json", rec(w))
-shutil.copy(D / "wards.geojson", OUT / "wards.geojson")
+# ward boundaries: real BMC wards, built by scripts/build_wards.py
 
 roads = pd.read_csv(D / "roads.csv")
 roads["lat"] = ((roads.start_lat + roads.end_lat) / 2).round(6)
@@ -112,3 +112,33 @@ dump("summary.json", {**json.loads((O / "summary.json").read_text()),
 top = c.dropna(subset=["complainant_id"]).groupby("complainant_id").agg(n=("complaint_id", "size"),
         wo=("work_order_id", "count")).sort_values(["wo", "n"], ascending=False)
 print("top citizens:\n", top.head(5))
+
+# ---- extra signals: social media chatter and rainfall ----
+import re
+posts = pd.read_csv(D / "social_posts.csv")
+locs_all = pd.read_csv(D / "localities.csv")
+road_names = sorted(roads.road_name.unique(), key=len, reverse=True)
+by_road, by_loc = {}, {}
+for _, p in posts.iterrows():
+    t = str(p.text).lower()
+    for rn in road_names:
+        if rn.lower() in t:
+            by_road.setdefault(rn, []).append(p.post_id)
+            break
+    for _, l in locs_all.iterrows():
+        names = [l.locality] + ([a.strip() for a in str(l.aliases).split(";")] if isinstance(l.aliases, str) else [])
+        if any(n and n.lower() in t for n in names):
+            by_loc.setdefault(l.locality, []).append(p.post_id)
+            break
+rain = pd.read_csv(D / "rainfall_daily.csv")
+rain_sum = rain.groupby("station").agg(total_mm=("rainfall_mm", "sum"), heavy_days=("rainfall_mm", lambda s: int((s >= 64.5).sum())),
+                                       red_days=("imd_alert", lambda s: int((s == "Red").sum()))).reset_index()
+tides = pd.read_csv(D / "tides.csv")
+dump("signals.json", {
+    "social_by_road": {k: len(v) for k, v in by_road.items()},
+    "social_by_locality": {k: len(v) for k, v in by_loc.items()},
+    "social_posts": rec(posts[["post_id", "posted_at", "source", "text", "likes_or_forwards"]]),
+    "rain": rec(rain_sum),
+    "big_tide_days": int((tides.big_tide_flag == "Y").sum()),
+    "max_tide_m": float(tides.height_m.max()),
+})

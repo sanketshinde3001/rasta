@@ -233,3 +233,19 @@ body:has(.overlay) .topbar { z-index: 0; }
   .who .avatar { display: none; }
   .brand { font-size: 17px; }
 }
+
+/* ---------- location picker ---------- */
+.lp { position: fixed; inset: 0; z-index: 3000; background: var(--bg); display: flex; flex-direction: column; }
+.lp-top { display: flex; gap: 8px; align-items: center; padding: 10px 12px; background: var(--card); border-bottom: 1px solid var(--line); }
+.lp-search { flex: 1; display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+.lp-search input { flex: 1; border: none; background: transparent; outline: none; min-width: 0; }
+.lp-results { position: absolute; top: 66px; left: 12px; right: 12px; z-index: 3100; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.08); max-width: 640px; margin: 0 auto; }
+.lp-results button { display: flex; gap: 12px; align-items: center; width: 100%; padding: 12px 14px; border: none; background: none; text-align: left; cursor: pointer; border-top: 1px solid var(--line-2); }
+.lp-results button:first-child { border-top: none; }
+.lp-map { position: relative; flex: 1; }
+.lp-pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; transition: transform .15s; }
+.lp-pin.up { transform: translate(-50%, calc(-100% - 10px)); }
+.lp-pin i { position: absolute; left: 50%; bottom: -4px; width: 12px; height: 5px; margin-left: -6px; border-radius: 50%; background: rgba(0,0,0,.25); }
+.lp-hint { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000; background: var(--ink); color: #fff; font-size: 13px; padding: 6px 12px; border-radius: 99px; white-space: nowrap; }
+.lp-gps { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 1000; display: inline-flex; gap: 8px; align-items: center; height: 40px; padding: 0 16px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--accent); font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.1); white-space: nowrap; }
+.lp-card { background: var(--card); border-top: 1px solid var(--line); padding: 16px; border-radius: 18px 18px 0 0; margin-top: -14px; z-index: 1001; position: relative; max-width: 640px; width: 100%; margin-left: auto; margin-right: auto; }
